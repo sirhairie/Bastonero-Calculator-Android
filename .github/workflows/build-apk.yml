@@ -21,6 +21,11 @@ jobs:
           mkdir project
           unzip -q Bastonero_Android_Project.zip -d project
 
+      - name: Enable AndroidX
+        run: |
+          echo "android.useAndroidX=true" > project/gradle.properties
+          echo "android.enableJetifier=true" >> project/gradle.properties
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
