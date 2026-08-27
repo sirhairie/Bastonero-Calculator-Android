@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
         long id;
         String name = "";
         String school = "";
-        String[] scores = {"","","",""};
+        String[] scores = {"","","","",""};
         double penalty = 0;
     }
 
@@ -89,8 +89,19 @@ public class MainActivity extends Activity {
     private void buildShell() {
         shell = new LinearLayout(this);
         shell.setOrientation(LinearLayout.VERTICAL);
-        shell.setBackgroundColor(BG);
+        shell.setBackgroundColor(NAVY);
         shell.setLayoutParams(new LinearLayout.LayoutParams(-1,-1));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            shell.setOnApplyWindowInsetsListener((v, insets) -> {
+                v.setPadding(
+                    insets.getSystemWindowInsetLeft(),
+                    insets.getSystemWindowInsetTop(),
+                    insets.getSystemWindowInsetRight(),
+                    insets.getSystemWindowInsetBottom()
+                );
+                return insets;
+            });
+        }
 
         LinearLayout toolbar = new LinearLayout(this);
         toolbar.setOrientation(LinearLayout.HORIZONTAL);
