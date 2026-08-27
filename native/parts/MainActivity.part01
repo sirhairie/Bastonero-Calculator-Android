@@ -1,0 +1,100 @@
+        TextView logo = text("B", 22, Color.WHITE, true);
+        logo.setGravity(Gravity.CENTER);
+        logo.setBackground(round(BLUE, dp(999), 0));
+        LinearLayout.LayoutParams lpLogo = new LinearLayout.LayoutParams(dp(42), dp(42));
+        toolbar.addView(logo, lpLogo);
+
+        LinearLayout titleBox = new LinearLayout(this);
+        titleBox.setOrientation(LinearLayout.VERTICAL);
+        titleBox.setPadding(dp(10),0,0,0);
+        TextView title = text("Bastonero Calculator", 19, Color.WHITE, true);
+        TextView sub = text("Native Android • TEST 1", 10, Color.rgb(203,213,225), true);
+        titleBox.addView(title); titleBox.addView(sub);
+        toolbar.addView(titleBox, new LinearLayout.LayoutParams(0,-2,1f));
+
+        Button home = smallButton("Home", Color.rgb(30,41,59));
+        home.setOnClickListener(v -> showHome());
+        toolbar.addView(home, new LinearLayout.LayoutParams(-2,dp(40)));
+        Button about = smallButton("About", BLUE);
+        about.setOnClickListener(v -> showAbout());
+        LinearLayout.LayoutParams abp = new LinearLayout.LayoutParams(-2,dp(40)); abp.setMargins(dp(8),0,0,0);
+        toolbar.addView(about, abp);
+        shell.addView(toolbar, new LinearLayout.LayoutParams(-1,-2));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(12),dp(12),dp(12),dp(18));
+        scroll.addView(content, new ScrollView.LayoutParams(-1,-2));
+        shell.addView(scroll, new LinearLayout.LayoutParams(-1,0,1f));
+
+        TextView footer = text("Develop by Sir Hairie Laysam", 12, Color.WHITE, true);
+        footer.setGravity(Gravity.CENTER);
+        footer.setPadding(dp(12),dp(12),dp(12),dp(12));
+        footer.setBackground(round(NAVY, 0, 0));
+        shell.addView(footer, new LinearLayout.LayoutParams(-1,-2));
+        setContentView(shell);
+    }
+
+    private void clearContent() { content.removeAllViews(); }
+
+    private void showHome() {
+        screen = Screen.HOME; activeCompetition = null; editingCompetition = null; clearContent();
+        addHeading("Bastonero Calculator", "Native tournament scoring workspace");
+        Button add = primaryButton("+  Add Competition", BLUE);
+        add.setOnClickListener(v -> { editingCompetition = null; showSetup(); });
+        content.addView(add, fullMargins(0,0,0,dp(12)));
+
+        if (competitions.isEmpty()) {
+            content.addView(infoCard("No competition yet", "Select Add Competition to begin."));
+            return;
+        }
+        TextView label = text("COMPETITIONS", 11, MUTED, true); label.setPadding(dp(3),dp(4),0,dp(6)); content.addView(label);
+        for (Competition c : competitions) content.addView(competitionCard(c), fullMargins(0,0,0,dp(10)));
+    }
+
+    private View competitionCard(Competition c) {
+        LinearLayout card = card();
+        TextView meet = text(c.meet, 18, NAVY, true); card.addView(meet);
+        String meta = c.level + " • " + (isTeam(c)?"Team":"Individual") + " • " + c.division + " • " + c.weapon;
+        TextView m = text(meta, 12, MUTED, false); m.setPadding(0,dp(4),0,dp(8)); card.addView(m);
+        TextView date = text((c.date.isEmpty()?"No date":c.date) + (c.venue.isEmpty()?"":" • "+c.venue), 12, TEXT, true); card.addView(date);
+        TextView counts = text(c.entries.size()+" "+entryLabel(c).toLowerCase()+(c.entries.size()==1?"":"s")+" • "+completedCount(c)+" scored", 12, BLUE, true);
+        counts.setPadding(0,dp(8),0,dp(8)); card.addView(counts);
+        Button open = primaryButton("Open Competition", BLUE); open.setOnClickListener(v -> {activeCompetition=c; showWorkspace();});
+        card.addView(open, new LinearLayout.LayoutParams(-1,dp(46)));
+        return card;
+    }
+
+    private void showSetup() {
+        screen = Screen.SETUP; clearContent();
+        boolean edit = editingCompetition != null;
+        Competition src = edit ? editingCompetition : new Competition();
+        addHeading(edit?"Edit Competition":"Competition Information", edit?"Update competition details":"Create the event before registering competitors");
+
+        LinearLayout form = card();
+        final EditText date = input(src.date, "YYYY-MM-DD", false);
+        date.setFocusable(false);
+        date.setOnClickListener(v -> chooseDate(date));
+        form.addView(field("Date", date));
+        final Spinner meet = spinner(new String[]{"Intramural Meet","District Meet","Cluster Meet","Provincial Meet","Triangular Meet","Regional Meet","Palarong Pambansa","Other"}, src.meet);
+        form.addView(field("Meet Level", meet));
+        final EditText venue = input(src.venue, "Venue", false); form.addView(field("Venue", venue));
+        final Spinner event = spinner(new String[]{"Individual","Synchronized / Team"}, src.event); form.addView(field("Competition Type", event));
+        final Spinner division = spinner(new String[]{"Boys","Girls","Mixed"}, src.division); form.addView(field("Division", division));
+        final Spinner weapon = spinner(new String[]{"Single Weapon","Identical Double Weapon","Espada y Daga"}, src.weapon); form.addView(field("Anyo Category", weapon));
+        final Spinner level = spinner(new String[]{"Elementary","Secondary"}, src.level); form.addView(field("Level", level));
+        final EditText notes = input(src.notes, "Optional notes", false); notes.setMinLines(2); form.addView(field("Notes", notes));
+        content.addView(form, fullMargins(0,0,0,dp(12)));
+
+        LinearLayout actions = new LinearLayout(this); actions.setOrientation(LinearLayout.HORIZONTAL);
+        Button cancel = primaryButton("Cancel", RED); cancel.setOnClickListener(v -> { if(edit){activeCompetition=editingCompetition;editingCompetition=null;showWorkspace();} else showHome(); });
+        Button save = primaryButton(edit?"Save Changes":"Add Competition", BLUE);
+        save.setOnClickListener(v -> {
+            Competition c = edit ? editingCompetition : new Competition();
+            if (!edit) { c.id = nextCompetitionId(); }
+            c.date = date.getText().toString().trim(); c.meet = selected(meet); c.venue = venue.getText().toString().trim();
+            c.event = selected(event); c.division = selected(division); c.weapon = selected(weapon); c.level = selected(level); c.notes = notes.getText().toString().trim();
+            if (!edit) competitions.add(c);
+            saveState(); activeCompetition=c; editingCompetition=null; toast(edit?"Competition updated":"Competition created"); showWorkspace();
