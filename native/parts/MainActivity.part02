@@ -1,100 +1,82 @@
-        });
-        actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(48),1f));
-        LinearLayout.LayoutParams sv = new LinearLayout.LayoutParams(0,dp(48),1.3f); sv.setMargins(dp(10),0,0,0); actions.addView(save,sv);
-        content.addView(actions);
-    }
-
-    private void showWorkspace() {
-        if (activeCompetition == null) { showHome(); return; }
-        screen = Screen.WORKSPACE; clearContent();
-        Competition c = activeCompetition;
-        addHeading(c.meet, c.level+" • "+(isTeam(c)?"Team":"Individual")+" • "+c.division+" • "+c.weapon);
-        content.addView(summaryCard(c), fullMargins(0,0,0,dp(10)));
-        content.addView(statusCards(c), fullMargins(0,0,0,dp(10)));
-        content.addView(rosterPanel(c), fullMargins(0,0,0,dp(10)));
-        if (c.scoringStarted) {
-            content.addView(scoringPanel(c), fullMargins(0,0,0,dp(10)));
-            content.addView(rankingPanel(c), fullMargins(0,0,0,dp(10)));
-        }
-    }
-
-    private View summaryCard(Competition c) {
-        LinearLayout card = card();
-        TextView e = text("ACTIVE COMPETITION",10,BLUE,true); card.addView(e);
-        TextView h = text(c.meet,20,NAVY,true); h.setPadding(0,dp(2),0,dp(4)); card.addView(h);
-        card.addView(text((c.date.isEmpty()?"No date":c.date)+(c.venue.isEmpty()?"":" • "+c.venue),12,MUTED,false));
-        LinearLayout chips = new LinearLayout(this); chips.setOrientation(LinearLayout.VERTICAL); chips.setPadding(0,dp(8),0,dp(8));
-        chips.addView(metaLine("Level",c.level)); chips.addView(metaLine("Competition Type",isTeam(c)?"Team":"Individual")); chips.addView(metaLine("Division",c.division)); chips.addView(metaLine("Anyo Category",c.weapon));
-        card.addView(chips);
-        LinearLayout actions = new LinearLayout(this); actions.setOrientation(LinearLayout.HORIZONTAL);
-        Button del = smallButton("Delete Competition", RED); del.setOnClickListener(v -> confirmDeleteCompetition(c));
-        Button edit = smallButton("Edit Competition", GREEN); edit.setOnClickListener(v -> {editingCompetition=c;showSetup();});
-        actions.addView(del,new LinearLayout.LayoutParams(0,dp(42),1f)); LinearLayout.LayoutParams ep=new LinearLayout.LayoutParams(0,dp(42),1f);ep.setMargins(dp(8),0,0,0);actions.addView(edit,ep);
-        card.addView(actions);
-        return card;
-    }
-
-    private View statusCards(Competition c) {
-        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout r1 = new LinearLayout(this), r2 = new LinearLayout(this); r1.setOrientation(LinearLayout.HORIZONTAL); r2.setOrientation(LinearLayout.HORIZONTAL);
-        ArrayList<ResultRow> rows = analyze(c);
-        String leader = rows.isEmpty()?"—":safeName(rows.get(0).entry.name);
-        String leadScore = rows.isEmpty()?"—":fmt(rows.get(0).data.net);
-        r1.addView(stat("Competitors / Teams",String.valueOf(c.entries.size())),weightCard());
-        LinearLayout.LayoutParams p = weightCard(); p.setMargins(dp(8),0,0,0);r1.addView(stat("Completed Scores",String.valueOf(rows.size())),p);
-        r2.addView(stat("Current Leader",leader),weightCard());
-        LinearLayout.LayoutParams p2=weightCard();p2.setMargins(dp(8),0,0,0);r2.addView(stat("Leading Score",leadScore),p2);
-        box.addView(r1); LinearLayout.LayoutParams rr=new LinearLayout.LayoutParams(-1,-2);rr.setMargins(0,dp(8),0,0);box.addView(r2,rr); return box;
-    }
-
-    private View rosterPanel(Competition c) {
-        LinearLayout panel = card();
-        LinearLayout head = new LinearLayout(this); head.setOrientation(LinearLayout.HORIZONTAL); head.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout txt = new LinearLayout(this); txt.setOrientation(LinearLayout.VERTICAL);
-        txt.addView(text(isTeam(c)?"Teams":"Competitors",17,NAVY,true)); txt.addView(text(c.scoringStarted?"Registration is locked while scoring.":"Add all competitors first, then proceed to judge scoring.",11,MUTED,false));
-        head.addView(txt,new LinearLayout.LayoutParams(0,-2,1f));
-        if(!c.scoringStarted){Button add=smallButton("+",BLUE);add.setTextSize(22);add.setOnClickListener(v->openEntryDialog(c,null));head.addView(add,new LinearLayout.LayoutParams(dp(48),dp(44)));}
-        panel.addView(head);
-        if(c.entries.isEmpty()){TextView empty=text("No "+entryLabel(c).toLowerCase()+" yet.",13,MUTED,false);empty.setGravity(Gravity.CENTER);empty.setPadding(0,dp(18),0,dp(18));panel.addView(empty);} else {
-            for(Entry e:c.entries) panel.addView(rosterRow(c,e));
-        }
-        if(c.scoringStarted){Button editReg=primaryButton("Edit Registration",Color.rgb(59,130,246));editReg.setOnClickListener(v->{c.scoringStarted=false;saveState();toast("Registration reopened");showWorkspace();});panel.addView(editReg,fullMargins(0,dp(10),0,0));}
-        else {Button proceed=primaryButton("Proceed to Judge Scoring",BLUE);proceed.setEnabled(!c.entries.isEmpty());proceed.setAlpha(c.entries.isEmpty()?0.5f:1f);proceed.setOnClickListener(v->{if(c.entries.isEmpty())return;c.scoringStarted=true;saveState();showWorkspace();});panel.addView(proceed,fullMargins(0,dp(10),0,0));}
-        return panel;
-    }
-
-    private View rosterRow(Competition c, Entry e) {
-        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.VERTICAL); row.setPadding(dp(10),dp(10),dp(10),dp(10)); row.setBackground(round(Color.rgb(248,250,252),dp(12),LINE));
-        LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout words=new LinearLayout(this);words.setOrientation(LinearLayout.VERTICAL);words.addView(text(safeName(e.name),15,TEXT,true));words.addView(text(e.school.isEmpty()?"—":e.school,11,MUTED,false));top.addView(words,new LinearLayout.LayoutParams(0,-2,1f));
-        ScoreData d=scoreData(e);TextView st=text(d.complete?"SCORED":"PENDING",10,d.complete?GREEN:MUTED,true);st.setPadding(dp(8),dp(5),dp(8),dp(5));st.setBackground(round(d.complete?Color.rgb(220,252,231):Color.rgb(241,245,249),dp(999),0));top.addView(st);row.addView(top);
-        if(!c.scoringStarted){LinearLayout a=new LinearLayout(this);a.setOrientation(LinearLayout.HORIZONTAL);a.setPadding(0,dp(8),0,0);Button edit=smallButton("Edit",GREEN);edit.setOnClickListener(v->openEntryDialog(c,e));Button del=smallButton("Remove",RED);del.setOnClickListener(v->confirmDeleteEntry(c,e));a.addView(edit,new LinearLayout.LayoutParams(0,dp(38),1f));LinearLayout.LayoutParams dp1=new LinearLayout.LayoutParams(0,dp(38),1f);dp1.setMargins(dp(8),0,0,0);a.addView(del,dp1);row.addView(a);}
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(8),0,0);row.setLayoutParams(p);return row;
-    }
-
-    private View scoringPanel(Competition c) {
-        LinearLayout panel=card();
-        TextView banner=text("JUDGE SCORING PHASE\nRegistration is locked while scoring.",12,Color.rgb(30,58,138),true);banner.setPadding(dp(12),dp(10),dp(12),dp(10));banner.setBackground(round(Color.rgb(239,246,255),dp(12),Color.rgb(191,219,254)));panel.addView(banner);
-        TextView h=text("Judge Scoring",17,NAVY,true);h.setPadding(0,dp(14),0,dp(4));panel.addView(h);panel.addView(text("Valid judge score: 7.0 to 10.0. Highest and lowest are removed; the middle three are added. Penalty is then subtracted.",11,MUTED,false));
+        TextView h=text("Judge Scoring",17,NAVY,true);h.setPadding(0,dp(14),0,dp(4));panel.addView(h);panel.addView(text("Tap a registered competitor above to jump to their score card. Valid score: 7.0–10.0. Highest and lowest are removed; the middle three are added, then penalty is subtracted.",11,MUTED,false));
         for(int i=0;i<c.entries.size();i++) panel.addView(scoreCard(c,c.entries.get(i),i),fullMargins(0,dp(10),0,0));
         return panel;
     }
 
     private View scoreCard(Competition c, Entry e, int index) {
-        LinearLayout card=card(); card.setBackground(round(Color.WHITE,dp(14),LINE));
+        LinearLayout card=card(); card.setBackground(round(Color.WHITE,dp(14),LINE)); card.setTag("score_"+e.id);
         LinearLayout head=new LinearLayout(this);head.setOrientation(LinearLayout.HORIZONTAL);head.setGravity(Gravity.CENTER_VERTICAL);
         TextView num=text(String.valueOf(index+1),14,BLUE,true);num.setGravity(Gravity.CENTER);num.setBackground(round(Color.rgb(239,246,255),dp(999),0));head.addView(num,new LinearLayout.LayoutParams(dp(36),dp(36)));
         LinearLayout nm=new LinearLayout(this);nm.setOrientation(LinearLayout.VERTICAL);nm.setPadding(dp(10),0,0,0);nm.addView(text(safeName(e.name),17,NAVY,true));nm.addView(text(e.school.isEmpty()?"—":e.school,11,MUTED,false));head.addView(nm,new LinearLayout.LayoutParams(0,-2,1f));card.addView(head);
 
-        LinearLayout scores1=new LinearLayout(this);scores1.setOrientation(LinearLayout.HORIZONTAL);scores1.setPadding(0,dp(10),0,0);
-        ArrayList<EditText> inputs=new ArrayList<>();
-        for(int i=0;i<5;i++){
-            final int idx=i;
-            EditText inp=input(e.scores[i],"J"+(i+1),true);inp.setGravity(Gravity.CENTER);inp.setTextSize(17);inp.setSelectAllOnFocus(true);inp.setSingleLine(true);inp.setImeOptions(i<4?EditorInfo.IME_ACTION_NEXT:EditorInfo.IME_ACTION_DONE);
-            inp.addTextChangedListener(new SimpleWatcher(){public void afterTextChanged(Editable s){e.scores[idx]=s.toString();saveState();}});
-            inp.setOnFocusChangeListener((v,has)->{if(!has)showWorkspace();});
-            inputs.add(inp);LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(0,dp(54),1f);if(i>0)ip.setMargins(dp(5),0,0,0);scores1.addView(inp,ip);
+        boolean compact=getResources().getConfiguration().screenWidthDp<600;
+        if(compact){
+            LinearLayout r1=judgeRow(); r1.addView(judgeCell(e,0),weightCard()); LinearLayout.LayoutParams j2=weightCard();j2.setMargins(dp(8),0,0,0);r1.addView(judgeCell(e,1),j2); card.addView(r1,fullMargins(0,dp(12),0,0));
+            LinearLayout r2=judgeRow(); r2.addView(judgeCell(e,2),weightCard()); LinearLayout.LayoutParams j4=weightCard();j4.setMargins(dp(8),0,0,0);r2.addView(judgeCell(e,3),j4); card.addView(r2,fullMargins(0,dp(8),0,0));
+            card.addView(judgeCell(e,4),fullMargins(0,dp(8),0,0));
+        } else {
+            LinearLayout r=judgeRow(); for(int i=0;i<5;i++){LinearLayout.LayoutParams jp=weightCard();if(i>0)jp.setMargins(dp(8),0,0,0);r.addView(judgeCell(e,i),jp);} card.addView(r,fullMargins(0,dp(12),0,0));
         }
-        card.addView(scores1);
 
         ScoreData d=scoreData(e);
+        LinearLayout metrics=new LinearLayout(this);metrics.setOrientation(LinearLayout.VERTICAL);metrics.setPadding(0,dp(10),0,0);
+        metrics.addView(metricLine("Removed highest / lowest",d.complete?fmt1(d.high)+" / "+fmt1(d.low):"—"));
+        metrics.addView(metricLine("Score (middle 3 total)",d.complete?fmt(d.score):"—"));
+        LinearLayout pen=new LinearLayout(this);pen.setOrientation(LinearLayout.HORIZONTAL);pen.setGravity(Gravity.CENTER_VERTICAL);TextView lab=text("Penalty",12,MUTED,true);pen.addView(lab,new LinearLayout.LayoutParams(0,-2,1f));
+        Button minus=smallButton("−",Color.rgb(71,85,105));TextView pv=text(fmt1(e.penalty),17,TEXT,true);pv.setGravity(Gravity.CENTER);Button plus=smallButton("+",BLUE);
+        minus.setOnClickListener(v->{e.penalty=Math.max(0,e.penalty-0.5);saveState();refreshAt(e.id);});plus.setOnClickListener(v->{e.penalty=Math.min(99,e.penalty+0.5);saveState();refreshAt(e.id);});
+        pen.addView(minus,new LinearLayout.LayoutParams(dp(44),dp(40)));pen.addView(pv,new LinearLayout.LayoutParams(dp(70),dp(40)));pen.addView(plus,new LinearLayout.LayoutParams(dp(44),dp(40)));metrics.addView(pen);
+        metrics.addView(metricLine("Final Score",d.complete?fmt(d.net):"—"));
+        card.addView(metrics);
+        Button update=primaryButton(d.complete?"Update Result":"Calculate / Update Result",BLUE);
+        update.setOnClickListener(v->{hideKeyboard();if(hasInvalidScore(e)){toast("Judge scores must be between 7.0 and 10.0");}refreshAt(e.id);});
+        card.addView(update,fullMargins(0,dp(10),0,0));
+        return card;
+    }
+
+    private View rankingPanel(Competition c) {
+        LinearLayout panel=card(); panel.addView(text("Ranking",17,NAVY,true));TextView sub=text("Ranks update from completed judge scores. A tied final score uses the 5-judge total as the tie-break.",11,MUTED,false);sub.setPadding(0,dp(3),0,dp(8));panel.addView(sub);
+        ArrayList<ResultRow> rows=analyze(c);
+        if(rows.isEmpty()){panel.addView(text("Detailed ranking will appear after a competitor has five valid judge scores.",12,MUTED,false));}
+        for(ResultRow r:rows)panel.addView(rankRow(r),fullMargins(0,dp(8),0,0));
+        Button save=primaryButton("Save Result",RED);save.setOnClickListener(v->saveResultImage(c,rows));save.setEnabled(!rows.isEmpty());save.setAlpha(rows.isEmpty()?0.5f:1f);panel.addView(save,fullMargins(0,dp(12),0,0));
+        return panel;
+    }
+
+    private View rankRow(ResultRow r) {
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(12),dp(12),dp(12),dp(12));box.setBackground(round(Color.rgb(248,250,252),dp(14),LINE));
+        LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);TextView rank=text(String.valueOf(r.rank),20,BLUE,true);rank.setGravity(Gravity.CENTER);rank.setBackground(round(Color.rgb(239,246,255),dp(12),0));top.addView(rank,new LinearLayout.LayoutParams(dp(52),dp(52)));
+        LinearLayout names=new LinearLayout(this);names.setOrientation(LinearLayout.VERTICAL);names.setPadding(dp(10),0,0,0);names.addView(text(safeName(r.entry.name),16,TEXT,true));names.addView(text(r.entry.school.isEmpty()?"—":r.entry.school,11,MUTED,false));top.addView(names,new LinearLayout.LayoutParams(0,-2,1f));box.addView(top);
+        TextView badge=text(remark(r),10,r.accent,true);badge.setGravity(Gravity.CENTER);badge.setPadding(dp(8),dp(6),dp(8),dp(6));badge.setBackground(round(Color.WHITE,dp(999),r.accent));box.addView(badge,fullMargins(0,dp(8),0,0));
+        LinearLayout m1=new LinearLayout(this);m1.setOrientation(LinearLayout.HORIZONTAL);m1.addView(rankMetric("Final",fmt(r.data.net),NAVY),weightCard());LinearLayout.LayoutParams a=weightCard();a.setMargins(dp(8),0,0,0);m1.addView(rankMetric("Score",fmt(r.data.score),TEXT),a);
+        LinearLayout m2=new LinearLayout(this);m2.setOrientation(LinearLayout.HORIZONTAL);m2.setPadding(0,dp(8),0,0);m2.addView(rankMetric("Penalty",fmt1(r.data.penalty),TEXT),weightCard());LinearLayout.LayoutParams b=weightCard();b.setMargins(dp(8),0,0,0);m2.addView(rankMetric("Removed",fmt1(r.data.high)+" / "+fmt1(r.data.low),TEXT),b);box.addView(m1,fullMargins(0,dp(10),0,0));box.addView(m2);
+        if(usesTieBreak(r))box.addView(rankMetric("5-Judge Total",fmt(r.data.fiveTotal),r.accent),fullMargins(0,dp(8),0,0));
+        TextView detail=text(r.detail,11,TEXT,false);detail.setPadding(0,dp(9),0,0);box.addView(detail);return box;
+    }
+
+    private void openEntryDialog(Competition c, Entry target) {
+        boolean edit=target!=null;Entry e=edit?target:new Entry();
+        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(18),dp(6),dp(18),0);
+        EditText name=input(e.name,isTeam(c)?"Team name":"Competitor name",false);EditText school=input(e.school,"School / Delegation",false);body.addView(field(isTeam(c)?"Team Name":"Competitor Name",name));body.addView(field("School / Delegation",school));
+        AlertDialog d=new AlertDialog.Builder(this).setTitle(edit?"Edit "+entryLabel(c):"Add "+entryLabel(c)).setView(body).setNegativeButton("Cancel",null).setPositiveButton(edit?"Save":"Add",null).create();
+        d.setOnShowListener(x->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{String n=name.getText().toString().trim();if(n.isEmpty()){name.setError("Required");return;}e.name=n;e.school=school.getText().toString().trim();if(!edit){e.id=c.nextEntryId++;c.entries.add(e);}saveState();d.dismiss();showWorkspace();}));d.show();
+    }
+
+    private void confirmDeleteEntry(Competition c, Entry e){new AlertDialog.Builder(this).setTitle("Remove "+entryLabel(c)).setMessage("Remove "+safeName(e.name)+" from this competition?").setNegativeButton("Cancel",null).setPositiveButton("Remove",(d,w)->{c.entries.remove(e);saveState();showWorkspace();}).show();}
+    private void confirmDeleteCompetition(Competition c){new AlertDialog.Builder(this).setTitle("Delete Competition").setMessage("Delete "+c.meet+" and all of its scoring data?").setNegativeButton("Cancel",null).setPositiveButton("Delete",(d,w)->{competitions.remove(c);activeCompetition=null;saveState();showHome();}).show();}
+
+    private ScoreData scoreData(Entry e){
+        ScoreData d=new ScoreData();d.nums=new double[5];
+        try{for(int i=0;i<5;i++){if(e.scores[i]==null||e.scores[i].trim().isEmpty())return d;double n=Double.parseDouble(e.scores[i]);if(n<7||n>10)return d;d.nums[i]=n;}}catch(Exception ex){return d;}
+        double[] sorted=d.nums.clone();Arrays.sort(sorted);d.low=sorted[0];d.high=sorted[4];d.score=sorted[1]+sorted[2]+sorted[3];d.penalty=Math.max(0,e.penalty);d.net=d.score-d.penalty;for(double n:d.nums)d.fiveTotal+=n;d.complete=true;return d;
+    }
+
+    private ArrayList<ResultRow> analyze(Competition c){
+        ArrayList<ResultRow> rows=new ArrayList<>();
+        for(Entry e:c.entries){ScoreData d=scoreData(e);if(d.complete){ResultRow r=new ResultRow();r.entry=e;r.data=d;rows.add(r);}}
+        rows.sort((a,b)->{int n=Double.compare(b.data.net,a.data.net);return n!=0?n:Double.compare(b.data.fiveTotal,a.data.fiveTotal);});
+        String lastExact=null;int lastRank=0;
+        for(int i=0;i<rows.size();i++){
+            ResultRow x=rows.get(i);String key=String.format(Locale.US,"%.6f|%.6f",x.data.net,x.data.fiveTotal);x.rank=key.equals(lastExact)?lastRank:i+1;lastExact=key;lastRank=x.rank;
+            int sameFinal=0,sameExact=0;double highestFive=-1;
+            for(ResultRow y:rows){if(eq(y.data.net,x.data.net)){sameFinal++;highestFive=Math.max(highestFive,y.data.fiveTotal);if(eq(y.data.fiveTotal,x.data.fiveTotal))sameExact++;}}
