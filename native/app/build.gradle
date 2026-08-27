@@ -1,0 +1,27 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.bastonero.calculator.nativeapp'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.bastonero.calculator.nativeapp'
+        minSdk 23
+        targetSdk 35
+        versionCode 20001
+        versionName '2.0-native-test1'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
