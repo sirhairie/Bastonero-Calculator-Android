@@ -1,28 +1,34 @@
-        TextView logo = text("B", 22, Color.WHITE, true);
+        TextView logo = text("B", 20, Color.WHITE, true);
         logo.setGravity(Gravity.CENTER);
         logo.setBackground(round(BLUE, dp(999), 0));
-        LinearLayout.LayoutParams lpLogo = new LinearLayout.LayoutParams(dp(42), dp(42));
+        LinearLayout.LayoutParams lpLogo = new LinearLayout.LayoutParams(dp(38), dp(38));
         toolbar.addView(logo, lpLogo);
 
         LinearLayout titleBox = new LinearLayout(this);
         titleBox.setOrientation(LinearLayout.VERTICAL);
-        titleBox.setPadding(dp(10),0,0,0);
-        TextView title = text("Bastonero Calculator", 19, Color.WHITE, true);
-        TextView sub = text("Native Android • TEST 1", 10, Color.rgb(203,213,225), true);
+        titleBox.setPadding(dp(8),0,dp(4),0);
+        TextView title = text("Bastonero", 17, Color.WHITE, true);
+        title.setSingleLine(true);
+        title.setEllipsize(TextUtils.TruncateAt.END);
+        TextView sub = text("Native Android • TEST 2", 9, Color.rgb(203,213,225), true);
+        sub.setSingleLine(true);
         titleBox.addView(title); titleBox.addView(sub);
         toolbar.addView(titleBox, new LinearLayout.LayoutParams(0,-2,1f));
 
         Button home = smallButton("Home", Color.rgb(30,41,59));
+        home.setMinWidth(0); home.setTextSize(10); home.setPadding(dp(7),0,dp(7),0);
         home.setOnClickListener(v -> showHome());
-        toolbar.addView(home, new LinearLayout.LayoutParams(-2,dp(40)));
+        toolbar.addView(home, new LinearLayout.LayoutParams(dp(52),dp(38)));
         Button about = smallButton("About", BLUE);
+        about.setMinWidth(0); about.setTextSize(10); about.setPadding(dp(6),0,dp(6),0);
         about.setOnClickListener(v -> showAbout());
-        LinearLayout.LayoutParams abp = new LinearLayout.LayoutParams(-2,dp(40)); abp.setMargins(dp(8),0,0,0);
+        LinearLayout.LayoutParams abp = new LinearLayout.LayoutParams(dp(52),dp(38)); abp.setMargins(dp(6),0,0,0);
         toolbar.addView(about, abp);
         shell.addView(toolbar, new LinearLayout.LayoutParams(-1,-2));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
+        scroll.setBackgroundColor(BG);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(12),dp(12),dp(12),dp(18));
