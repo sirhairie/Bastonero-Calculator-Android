@@ -1,0 +1,100 @@
+        LinearLayout metrics=new LinearLayout(this);metrics.setOrientation(LinearLayout.VERTICAL);metrics.setPadding(0,dp(10),0,0);
+        metrics.addView(metricLine("Removed",d.complete?fmt1(d.high)+" / "+fmt1(d.low):"—"));
+        metrics.addView(metricLine("Score (middle 3 total)",d.complete?fmt(d.score):"—"));
+        LinearLayout pen=new LinearLayout(this);pen.setOrientation(LinearLayout.HORIZONTAL);pen.setGravity(Gravity.CENTER_VERTICAL);TextView lab=text("Penalty",12,MUTED,true);pen.addView(lab,new LinearLayout.LayoutParams(0,-2,1f));
+        Button minus=smallButton("−",Color.rgb(71,85,105));TextView pv=text(fmt1(e.penalty),17,TEXT,true);pv.setGravity(Gravity.CENTER);Button plus=smallButton("+",BLUE);
+        minus.setOnClickListener(v->{e.penalty=Math.max(0,e.penalty-0.5);saveState();showWorkspace();});plus.setOnClickListener(v->{e.penalty=Math.min(99,e.penalty+0.5);saveState();showWorkspace();});
+        pen.addView(minus,new LinearLayout.LayoutParams(dp(44),dp(40)));pen.addView(pv,new LinearLayout.LayoutParams(dp(70),dp(40)));pen.addView(plus,new LinearLayout.LayoutParams(dp(44),dp(40)));metrics.addView(pen);
+        metrics.addView(metricLine("Final Score",d.complete?fmt(d.net):"—"));
+        card.addView(metrics);
+        return card;
+    }
+
+    private View rankingPanel(Competition c) {
+        LinearLayout panel=card(); panel.addView(text("Ranking",17,NAVY,true));TextView sub=text("Ranks update from completed judge scores. A tied final score uses the 5-judge total as the tie-break.",11,MUTED,false);sub.setPadding(0,dp(3),0,dp(8));panel.addView(sub);
+        ArrayList<ResultRow> rows=analyze(c);
+        if(rows.isEmpty()){panel.addView(text("Detailed ranking will appear after a competitor has five valid judge scores.",12,MUTED,false));}
+        for(ResultRow r:rows)panel.addView(rankRow(r),fullMargins(0,dp(8),0,0));
+        Button save=primaryButton("Save Result",RED);save.setOnClickListener(v->saveResultImage(c,rows));save.setEnabled(!rows.isEmpty());save.setAlpha(rows.isEmpty()?0.5f:1f);panel.addView(save,fullMargins(0,dp(12),0,0));
+        return panel;
+    }
+
+    private View rankRow(ResultRow r) {
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(12),dp(12),dp(12),dp(12));box.setBackground(round(Color.rgb(248,250,252),dp(14),LINE));
+        LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);TextView rank=text(String.valueOf(r.rank),20,BLUE,true);rank.setGravity(Gravity.CENTER);rank.setBackground(round(Color.rgb(239,246,255),dp(12),0));top.addView(rank,new LinearLayout.LayoutParams(dp(52),dp(52)));
+        LinearLayout names=new LinearLayout(this);names.setOrientation(LinearLayout.VERTICAL);names.setPadding(dp(10),0,0,0);names.addView(text(safeName(r.entry.name),16,TEXT,true));names.addView(text(r.entry.school.isEmpty()?"—":r.entry.school,11,MUTED,false));top.addView(names,new LinearLayout.LayoutParams(0,-2,1f));TextView badge=text(remark(r),10,r.accent,true);badge.setPadding(dp(8),dp(6),dp(8),dp(6));badge.setBackground(round(Color.rgb(248,250,252),dp(999),r.accent));top.addView(badge);box.addView(top);
+        String metrics="Final "+fmt(r.data.net)+"   •   Score "+fmt(r.data.score)+"   •   Penalty "+fmt1(r.data.penalty)+"   •   Removed "+fmt1(r.data.high)+" / "+fmt1(r.data.low);
+        if(usesTieBreak(r))metrics+="   •   5-Judge Total "+fmt(r.data.fiveTotal);
+        TextView m=text(metrics,11,MUTED,true);m.setPadding(0,dp(9),0,dp(5));box.addView(m);box.addView(text(r.detail,11,TEXT,false));return box;
+    }
+
+    private void openEntryDialog(Competition c, Entry target) {
+        boolean edit=target!=null;Entry e=edit?target:new Entry();
+        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(18),dp(6),dp(18),0);
+        EditText name=input(e.name,isTeam(c)?"Team name":"Competitor name",false);EditText school=input(e.school,"School / Delegation",false);body.addView(field(isTeam(c)?"Team Name":"Competitor Name",name));body.addView(field("School / Delegation",school));
+        AlertDialog d=new AlertDialog.Builder(this).setTitle(edit?"Edit "+entryLabel(c):"Add "+entryLabel(c)).setView(body).setNegativeButton("Cancel",null).setPositiveButton(edit?"Save":"Add",null).create();
+        d.setOnShowListener(x->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{String n=name.getText().toString().trim();if(n.isEmpty()){name.setError("Required");return;}e.name=n;e.school=school.getText().toString().trim();if(!edit){e.id=c.nextEntryId++;c.entries.add(e);}saveState();d.dismiss();showWorkspace();}));d.show();
+    }
+
+    private void confirmDeleteEntry(Competition c, Entry e){new AlertDialog.Builder(this).setTitle("Remove "+entryLabel(c)).setMessage("Remove "+safeName(e.name)+" from this competition?").setNegativeButton("Cancel",null).setPositiveButton("Remove",(d,w)->{c.entries.remove(e);saveState();showWorkspace();}).show();}
+    private void confirmDeleteCompetition(Competition c){new AlertDialog.Builder(this).setTitle("Delete Competition").setMessage("Delete "+c.meet+" and all of its scoring data?").setNegativeButton("Cancel",null).setPositiveButton("Delete",(d,w)->{competitions.remove(c);activeCompetition=null;saveState();showHome();}).show();}
+
+    private ScoreData scoreData(Entry e){
+        ScoreData d=new ScoreData();d.nums=new double[5];
+        try{for(int i=0;i<5;i++){if(e.scores[i]==null||e.scores[i].trim().isEmpty())return d;double n=Double.parseDouble(e.scores[i]);if(n<7||n>10)return d;d.nums[i]=n;}}catch(Exception ex){return d;}
+        double[] sorted=d.nums.clone();Arrays.sort(sorted);d.low=sorted[0];d.high=sorted[4];d.score=sorted[1]+sorted[2]+sorted[3];d.penalty=Math.max(0,e.penalty);d.net=d.score-d.penalty;for(double n:d.nums)d.fiveTotal+=n;d.complete=true;return d;
+    }
+
+    private ArrayList<ResultRow> analyze(Competition c){
+        ArrayList<ResultRow> rows=new ArrayList<>();
+        for(Entry e:c.entries){ScoreData d=scoreData(e);if(d.complete){ResultRow r=new ResultRow();r.entry=e;r.data=d;rows.add(r);}}
+        rows.sort((a,b)->{int n=Double.compare(b.data.net,a.data.net);return n!=0?n:Double.compare(b.data.fiveTotal,a.data.fiveTotal);});
+        String lastExact=null;int lastRank=0;
+        for(int i=0;i<rows.size();i++){
+            ResultRow x=rows.get(i);String key=String.format(Locale.US,"%.6f|%.6f",x.data.net,x.data.fiveTotal);x.rank=key.equals(lastExact)?lastRank:i+1;lastExact=key;lastRank=x.rank;
+            int sameFinal=0,sameExact=0;double highestFive=-1;
+            for(ResultRow y:rows){if(eq(y.data.net,x.data.net)){sameFinal++;highestFive=Math.max(highestFive,y.data.fiveTotal);if(eq(y.data.fiveTotal,x.data.fiveTotal))sameExact++;}}
+            if(sameExact>1){x.status="REPEAT PERFORMANCE";x.accent=RED;x.detail="Final score tied at "+fmt(x.data.net)+" and 5-judge total also tied at "+fmt(x.data.fiveTotal)+". Repeat performance is required.";}
+            else if(sameFinal>1&&eq(x.data.fiveTotal,highestFive)){x.status="TIE-BREAK WINNER";x.accent=BLUE;x.detail="Final score tied at "+fmt(x.data.net)+". Won the tie-break with the highest 5-judge total of "+fmt(x.data.fiveTotal)+".";}
+            else if(sameFinal>1){x.status="TIE-BREAK APPLIED";x.accent=Color.rgb(146,64,14);x.detail="Final score tied at "+fmt(x.data.net)+". Ranked below the higher 5-judge total. This entry has "+fmt(x.data.fiveTotal)+".";}
+            else{x.status="RANKED";x.accent=GREEN;x.detail="Score "+fmt(x.data.score)+" minus penalty "+fmt1(x.data.penalty)+" gives final "+fmt(x.data.net)+".";}
+        }return rows;
+    }
+
+    private boolean usesTieBreak(ResultRow r){return !"RANKED".equals(r.status);}
+    private String remark(ResultRow r){if("REPEAT PERFORMANCE".equals(r.status))return "Repeat Performance";String medal=r.rank==1?"Gold Medal":r.rank==2?"Silver Medal":r.rank==3?"Bronze Medal":ordinal(r.rank)+" Place";if("TIE-BREAK WINNER".equals(r.status))return medal+" • Tie-Break Winner";if("TIE-BREAK APPLIED".equals(r.status))return medal+" • Tie-Break Applied";return r.rank<=3?medal:ordinal(r.rank)+" Place";}
+
+    private void saveResultImage(Competition c, ArrayList<ResultRow> rows){
+        if(rows.isEmpty())return;
+        try{
+            int width=1400;int header=210;int meta=180;int rowH=190;int footer=130;int height=header+meta+rows.size()*rowH+footer;
+            Bitmap bmp=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);Canvas cv=new Canvas(bmp);Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);cv.drawColor(Color.rgb(238,243,249));
+            p.setColor(NAVY);cv.drawRoundRect(40,40,width-40,header-20,28,28,p);drawText(cv,p,"Bastonero Calculator",80,105,46,Color.WHITE,true);drawText(cv,p,"Official Tournament Result Sheet • Native Android",80,158,25,Color.rgb(203,213,225),false);
+            p.setColor(Color.WHITE);cv.drawRoundRect(40,header,width-40,header+meta-20,22,22,p);drawText(cv,p,c.meet,70,header+48,30,NAVY,true);drawText(cv,p,(c.date.isEmpty()?"No date":c.date)+(c.venue.isEmpty()?"":" • "+c.venue),70,header+86,21,MUTED,false);drawText(cv,p,c.level+" • "+(isTeam(c)?"Team":"Individual")+" • "+c.division+" • "+c.weapon,70,header+128,22,TEXT,true);
+            int y=header+meta;
+            for(ResultRow r:rows){p.setColor(Color.WHITE);cv.drawRoundRect(40,y,width-40,y+rowH-14,18,18,p);drawText(cv,p,"#"+r.rank,70,y+45,30,BLUE,true);drawText(cv,p,safeName(r.entry.name),150,y+42,27,TEXT,true);drawText(cv,p,r.entry.school.isEmpty()?"—":r.entry.school,150,y+76,19,MUTED,false);String js="J1 "+fmt1(r.data.nums[0])+"   J2 "+fmt1(r.data.nums[1])+"   J3 "+fmt1(r.data.nums[2])+"   J4 "+fmt1(r.data.nums[3])+"   J5 "+fmt1(r.data.nums[4]);drawText(cv,p,js,70,y+116,19,TEXT,true);String ms="Removed "+fmt1(r.data.high)+" / "+fmt1(r.data.low)+"   •   Score "+fmt(r.data.score)+"   •   Penalty "+fmt1(r.data.penalty)+"   •   FINAL "+fmt(r.data.net);drawText(cv,p,ms,70,y+151,20,NAVY,true);drawTextRight(cv,p,remark(r),width-70,y+50,20,r.accent,true);if(usesTieBreak(r))drawTextRight(cv,p,"5-Judge Total "+fmt(r.data.fiveTotal),width-70,y+88,18,MUTED,true);y+=rowH;}
+            drawText(cv,p,"Develop by Sir Hairie Laysam",width/2,height-70,20,NAVY,true,Paint.Align.CENTER);
+            String file="Bastonero_Result_"+System.currentTimeMillis()+".png";Uri uri;
+            if(Build.VERSION.SDK_INT>=29){ContentValues values=new ContentValues();values.put(MediaStore.Images.Media.DISPLAY_NAME,file);values.put(MediaStore.Images.Media.MIME_TYPE,"image/png");values.put(MediaStore.Images.Media.RELATIVE_PATH,"Pictures/Bastonero");uri=getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,values);if(uri==null)throw new Exception("Could not create image");try(OutputStream out=getContentResolver().openOutputStream(uri)){bmp.compress(Bitmap.CompressFormat.PNG,100,out);}}
+            else {java.io.File dir=new java.io.File(getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES),"Bastonero");dir.mkdirs();java.io.File f=new java.io.File(dir,file);try(OutputStream out=new java.io.FileOutputStream(f)){bmp.compress(Bitmap.CompressFormat.PNG,100,out);}uri=Uri.fromFile(f);}
+            bmp.recycle();toast("Result saved to Pictures/Bastonero");
+        }catch(Exception ex){toast("Unable to save result: "+ex.getMessage());}
+    }
+
+    private void showAbout(){
+        TextView t=text("BASTONERO CALCULATOR — NATIVE ANDROID\n\nThis test build is a full native Android rewrite. It does not use WebView, HTML, CSS, or JavaScript for the app interface or scoring engine.\n\nScoring rule preserved from v1.7:\n• Five judges, valid scores 7.0–10.0\n• Remove highest and lowest\n• Add the middle three scores\n• Subtract official penalty\n• Tied final score: use 5-judge total\n• Still tied: Repeat Performance\n\nDeveloper\nHairie A. Laysam\nTeacher I\nSta. Maria National High School\n\nNative Test Version 2.0 — TEST 1",14,TEXT,false);t.setPadding(dp(18),dp(8),dp(18),dp(18));t.setMovementMethod(new ScrollingMovementMethod());new AlertDialog.Builder(this).setTitle("About Bastonero Native").setView(t).setPositiveButton("Close",null).show();}
+
+    private void loadState(){
+        competitions.clear();String raw=getSharedPreferences("bastonero_native",MODE_PRIVATE).getString("state","");if(raw.isEmpty())return;try{JSONArray a=new JSONArray(raw);for(int i=0;i<a.length();i++)competitions.add(compFromJson(a.getJSONObject(i)));}catch(Exception ignored){}
+    }
+    private void saveState(){try{JSONArray a=new JSONArray();for(Competition c:competitions)a.put(compToJson(c));getSharedPreferences("bastonero_native",MODE_PRIVATE).edit().putString("state",a.toString()).apply();}catch(Exception ignored){} }
+    private JSONObject compToJson(Competition c)throws JSONException{JSONObject o=new JSONObject();o.put("id",c.id);o.put("date",c.date);o.put("meet",c.meet);o.put("venue",c.venue);o.put("level",c.level);o.put("division",c.division);o.put("event",c.event);o.put("weapon",c.weapon);o.put("notes",c.notes);o.put("nextEntryId",c.nextEntryId);o.put("scoringStarted",c.scoringStarted);JSONArray es=new JSONArray();for(Entry e:c.entries){JSONObject j=new JSONObject();j.put("id",e.id);j.put("name",e.name);j.put("school",e.school);JSONArray ss=new JSONArray();for(String s:e.scores)ss.put(s);j.put("scores",ss);j.put("penalty",e.penalty);es.put(j);}o.put("entries",es);return o;}
+    private Competition compFromJson(JSONObject o)throws JSONException{Competition c=new Competition();c.id=o.optLong("id");c.date=o.optString("date");c.meet=o.optString("meet","Intramural Meet");c.venue=o.optString("venue");c.level=o.optString("level","Elementary");c.division=o.optString("division","Boys");c.event=o.optString("event","Individual");c.weapon=o.optString("weapon","Single Weapon");c.notes=o.optString("notes");c.nextEntryId=o.optLong("nextEntryId",1);c.scoringStarted=o.optBoolean("scoringStarted",false);JSONArray es=o.optJSONArray("entries");if(es!=null)for(int i=0;i<es.length();i++){JSONObject j=es.getJSONObject(i);Entry e=new Entry();e.id=j.optLong("id");e.name=j.optString("name");e.school=j.optString("school");JSONArray ss=j.optJSONArray("scores");if(ss!=null&&ss.length()==5)for(int k=0;k<5;k++)e.scores[k]=ss.optString(k,"");e.penalty=j.optDouble("penalty",0);c.entries.add(e);}return c;}
+
+    private void chooseDate(EditText target){Calendar cal=Calendar.getInstance();new DatePickerDialog(this,(v,y,m,d)->target.setText(String.format(Locale.US,"%04d-%02d-%02d",y,m+1,d)),cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH)).show();}
+    private long nextCompetitionId(){long max=0;for(Competition c:competitions)max=Math.max(max,c.id);return max+1;}
+    private int completedCount(Competition c){int n=0;for(Entry e:c.entries)if(scoreData(e).complete)n++;return n;}
+    private boolean isTeam(Competition c){return "Synchronized / Team".equals(c.event);}
+    private String entryLabel(Competition c){return isTeam(c)?"Team":"Competitor";}
+    private String safeName(String s){return s==null||s.trim().isEmpty()?"Unnamed":s.trim();}
+    private boolean eq(double a,double b){return Math.abs(a-b)<0.000001;}
