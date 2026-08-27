@@ -1,0 +1,31 @@
+    private String fmt(double v){return String.format(Locale.US,"%.2f",v);}
+    private String fmt1(double v){return String.format(Locale.US,"%.1f",v);}
+    private String ordinal(int n){int v=n%100;if(v>=11&&v<=13)return n+"th";switch(n%10){case 1:return n+"st";case 2:return n+"nd";case 3:return n+"rd";default:return n+"th";}}
+    private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
+    private String selected(Spinner s){return String.valueOf(s.getSelectedItem());}
+
+    private void addHeading(String title,String subtitle){TextView h=text(title,23,NAVY,true);content.addView(h);TextView sub=text(subtitle,12,MUTED,false);sub.setPadding(0,dp(3),0,dp(12));content.addView(sub);}
+    private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(14),dp(14),dp(14),dp(14));l.setBackground(round(Color.WHITE,dp(16),LINE));return l;}
+    private View infoCard(String title,String body){LinearLayout c=card();TextView t=text(title,17,NAVY,true);t.setGravity(Gravity.CENTER);TextView b=text(body,12,MUTED,false);b.setGravity(Gravity.CENTER);b.setPadding(0,dp(6),0,0);c.addView(t);c.addView(b);return c;}
+    private TextView text(String s,int sp,int color,boolean bold){TextView t=new TextView(this);t.setText(s);t.setTextSize(sp);t.setTextColor(color);if(bold)t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);t.setLineSpacing(0,1.1f);return t;}
+    private Button primaryButton(String s,int color){Button b=new Button(this);b.setAllCaps(false);b.setText(s);b.setTextColor(Color.WHITE);b.setTextSize(13);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setBackground(round(color,dp(12),0));b.setPadding(dp(12),0,dp(12),0);return b;}
+    private Button smallButton(String s,int color){Button b=primaryButton(s,color);b.setTextSize(11);b.setMinWidth(0);b.setMinimumWidth(0);return b;}
+    private EditText input(String val,String hint,boolean number){EditText e=new EditText(this);e.setText(val==null?"":val);e.setHint(hint);e.setTextColor(TEXT);e.setHintTextColor(Color.rgb(148,163,184));e.setTextSize(14);e.setPadding(dp(12),dp(8),dp(12),dp(8));e.setBackground(round(Color.WHITE,dp(10),Color.rgb(203,213,225)));if(number)e.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);return e;}
+    private Spinner spinner(String[] values,String selected){Spinner s=new Spinner(this);ArrayAdapter<String>a=new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,values);s.setAdapter(a);for(int i=0;i<values.length;i++)if(values[i].equals(selected)){s.setSelection(i);break;}s.setBackground(round(Color.WHITE,dp(10),Color.rgb(203,213,225)));s.setPadding(dp(8),0,dp(8),0);return s;}
+    private LinearLayout field(String label,View input){LinearLayout f=new LinearLayout(this);f.setOrientation(LinearLayout.VERTICAL);TextView l=text(label,11,MUTED,true);l.setPadding(dp(2),0,0,dp(5));f.addView(l);f.addView(input,new LinearLayout.LayoutParams(-1,input instanceof Spinner?dp(50):-2));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,0,0,dp(11));f.setLayoutParams(p);return f;}
+    private View metaLine(String label,String value){LinearLayout r=new LinearLayout(this);r.setOrientation(LinearLayout.HORIZONTAL);r.setPadding(0,dp(3),0,dp(3));r.addView(text(label,11,MUTED,true),new LinearLayout.LayoutParams(0,-2,0.45f));r.addView(text(value,12,TEXT,true),new LinearLayout.LayoutParams(0,-2,0.55f));return r;}
+    private View stat(String label,String value){LinearLayout s=card();s.setPadding(dp(10),dp(10),dp(10),dp(10));TextView l=text(label,10,MUTED,true);TextView v=text(value,17,NAVY,true);v.setPadding(0,dp(4),0,0);s.addView(l);s.addView(v);return s;}
+    private LinearLayout.LayoutParams weightCard(){return new LinearLayout.LayoutParams(0,-2,1f);}
+    private View metricLine(String label,String value){LinearLayout r=new LinearLayout(this);r.setOrientation(LinearLayout.HORIZONTAL);r.setPadding(0,dp(4),0,dp(4));r.addView(text(label,11,MUTED,true),new LinearLayout.LayoutParams(0,-2,1f));TextView v=text(value,14,TEXT,true);v.setGravity(Gravity.END);r.addView(v,new LinearLayout.LayoutParams(-2,-2));return r;}
+    private GradientDrawable round(int fill,int radius,int stroke){GradientDrawable g=new GradientDrawable();g.setColor(fill);g.setCornerRadius(radius);if(stroke!=0)g.setStroke(dp(1),stroke);return g;}
+    private LinearLayout.LayoutParams fullMargins(int l,int t,int r,int b){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(l,t,r,b);return p;}
+    private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
+
+    private void drawText(Canvas cv,Paint p,String s,float x,float y,float size,int color,boolean bold){drawText(cv,p,s,x,y,size,color,bold,Paint.Align.LEFT);}
+    private void drawTextRight(Canvas cv,Paint p,String s,float x,float y,float size,int color,boolean bold){drawText(cv,p,s,x,y,size,color,bold,Paint.Align.RIGHT);}
+    private void drawText(Canvas cv,Paint p,String s,float x,float y,float size,int color,boolean bold,Paint.Align align){p.setColor(color);p.setTextSize(size);p.setTypeface(bold?Typeface.DEFAULT_BOLD:Typeface.DEFAULT);p.setTextAlign(align);cv.drawText(s,x,y,p);}
+
+    abstract static class SimpleWatcher implements TextWatcher { public void beforeTextChanged(CharSequence s,int st,int c,int a){} public void onTextChanged(CharSequence s,int st,int b,int c){} }
+
+    @Override public void onBackPressed(){if(screen==Screen.HOME){super.onBackPressed();}else if(screen==Screen.WORKSPACE){showHome();}else if(screen==Screen.SETUP&&editingCompetition!=null){activeCompetition=editingCompetition;editingCompetition=null;showWorkspace();}else showHome();}
+}
