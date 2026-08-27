@@ -10,8 +10,8 @@ android {
         applicationId 'com.bastonero.calculator.nativeapp'
         minSdk 23
         targetSdk 35
-        versionCode 20001
-        versionName '2.0-native-test1'
+        versionCode 20002
+        versionName '2.0-native-test2'
     }
 
     buildTypes {
