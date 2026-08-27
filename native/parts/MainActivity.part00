@@ -31,6 +31,7 @@ public class MainActivity extends Activity {
     private static final int WHITE = Color.WHITE;
 
     private LinearLayout shell, content;
+    private ScrollView scroll;
     private final ArrayList<Competition> competitions = new ArrayList<>();
     private Competition activeCompetition;
     private Screen screen = Screen.HOME;
@@ -108,3 +109,96 @@ public class MainActivity extends Activity {
         toolbar.setGravity(Gravity.CENTER_VERTICAL);
         toolbar.setPadding(dp(14), dp(10), dp(10), dp(10));
         toolbar.setBackgroundColor(NAVY);
+
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.brand_logo);
+        logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        LinearLayout.LayoutParams lpLogo = new LinearLayout.LayoutParams(dp(42), dp(42));
+        toolbar.addView(logo, lpLogo);
+
+        LinearLayout titleBox = new LinearLayout(this);
+        titleBox.setOrientation(LinearLayout.VERTICAL);
+        titleBox.setPadding(dp(8),0,dp(4),0);
+        TextView title = text("Bastonero Calculator", 16, Color.WHITE, true);
+        title.setSingleLine(true);
+        title.setEllipsize(TextUtils.TruncateAt.END);
+        TextView sub = text("Native Android • TEST 3", 9, Color.rgb(203,213,225), true);
+        sub.setSingleLine(true);
+        titleBox.addView(title); titleBox.addView(sub);
+        toolbar.addView(titleBox, new LinearLayout.LayoutParams(0,-2,1f));
+
+        Button home = smallButton("Home", Color.rgb(30,41,59));
+        home.setMinWidth(0); home.setTextSize(10); home.setPadding(dp(7),0,dp(7),0);
+        home.setOnClickListener(v -> showHome());
+        toolbar.addView(home, new LinearLayout.LayoutParams(dp(52),dp(38)));
+        Button about = smallButton("About", BLUE);
+        about.setMinWidth(0); about.setTextSize(10); about.setPadding(dp(6),0,dp(6),0);
+        about.setOnClickListener(v -> showAbout());
+        LinearLayout.LayoutParams abp = new LinearLayout.LayoutParams(dp(52),dp(38)); abp.setMargins(dp(6),0,0,0);
+        toolbar.addView(about, abp);
+        shell.addView(toolbar, new LinearLayout.LayoutParams(-1,-2));
+
+        scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(BG);
+        content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(12),dp(12),dp(12),dp(24));
+        scroll.addView(content, new ScrollView.LayoutParams(-1,-2));
+        shell.addView(scroll, new LinearLayout.LayoutParams(-1,0,1f));
+        setContentView(shell);
+    }
+
+    private void clearContent() { content.removeAllViews(); }
+
+    private void showHome() {
+        screen = Screen.HOME; activeCompetition = null; editingCompetition = null; clearContent();
+        addHeading("Bastonero Calculator", "Native tournament scoring workspace");
+        Button add = primaryButton("+  Add Competition", BLUE);
+        add.setOnClickListener(v -> { editingCompetition = null; showSetup(); });
+        content.addView(add, fullMargins(0,0,0,dp(14)));
+
+        if (competitions.isEmpty()) {
+            content.addView(infoCard("No competition yet", "Select Add Competition to begin."));
+            addFooter();
+            return;
+        }
+        TextView label = text("COMPETITIONS", 11, MUTED, true); label.setPadding(dp(3),dp(4),0,dp(7)); content.addView(label);
+        for (Competition c : competitions) content.addView(competitionCard(c), fullMargins(0,0,0,dp(12)));
+        addFooter();
+    }
+
+    private View competitionCard(Competition c) {
+        LinearLayout card = card();
+        LinearLayout top = new LinearLayout(this); top.setOrientation(LinearLayout.HORIZONTAL); top.setGravity(Gravity.CENTER_VERTICAL);
+        TextView meetBadge = text(c.meet, 11, Color.WHITE, true); meetBadge.setPadding(dp(10),dp(6),dp(10),dp(6)); meetBadge.setBackground(round(RED,dp(999),0));
+        top.addView(meetBadge, new LinearLayout.LayoutParams(-2,-2));
+        ArrayList<ResultRow> rows=analyze(c);
+        TextView phase=text(c.scoringStarted?"SCORING":"REGISTRATION",9,c.scoringStarted?BLUE:MUTED,true);phase.setPadding(dp(8),dp(5),dp(8),dp(5));phase.setBackground(round(c.scoringStarted?Color.rgb(219,234,254):Color.rgb(241,245,249),dp(999),0));
+        LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-2,-2);pp.setMargins(dp(8),0,0,0);top.addView(phase,pp);
+        card.addView(top);
+        TextView date = text((c.date.isEmpty()?"No date":c.date) + (c.venue.isEmpty()?"":" • "+c.venue), 12, MUTED, false);date.setPadding(0,dp(8),0,dp(10));card.addView(date);
+        LinearLayout grid=new LinearLayout(this);grid.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout g1=new LinearLayout(this);g1.setOrientation(LinearLayout.HORIZONTAL);g1.addView(miniMeta("Level",c.level),weightCard());LinearLayout.LayoutParams gp=weightCard();gp.setMargins(dp(8),0,0,0);g1.addView(miniMeta("Type",isTeam(c)?"Team":"Individual"),gp);
+        LinearLayout g2=new LinearLayout(this);g2.setOrientation(LinearLayout.HORIZONTAL);g2.setPadding(0,dp(8),0,0);g2.addView(miniMeta("Division",c.division),weightCard());LinearLayout.LayoutParams gp2=weightCard();gp2.setMargins(dp(8),0,0,0);g2.addView(miniMeta("Anyo",c.weapon),gp2);grid.addView(g1);grid.addView(g2);card.addView(grid);
+        String stat= c.entries.size()+" "+(c.entries.size()==1?entryLabel(c):entryLabel(c)+"s")+" • "+completedCount(c)+" scored";
+        if(!rows.isEmpty()) stat += " • Leader "+fmt(rows.get(0).data.net);
+        TextView counts=text(stat,11,BLUE,true);counts.setPadding(0,dp(11),0,dp(9));card.addView(counts);
+        Button open = primaryButton("Open Competition", BLUE); open.setOnClickListener(v -> {activeCompetition=c; showWorkspace();});
+        card.addView(open, new LinearLayout.LayoutParams(-1,dp(48)));
+        return card;
+    }
+
+    private void showSetup() {
+        screen = Screen.SETUP; clearContent();
+        boolean edit = editingCompetition != null;
+        Competition src = edit ? editingCompetition : new Competition();
+        addHeading(edit?"Edit Competition":"Competition Information", edit?"Update competition details":"Create the event before registering competitors");
+
+        LinearLayout form = card();
+        final EditText date = input(src.date, "YYYY-MM-DD", false);
+        date.setFocusable(false);
+        date.setOnClickListener(v -> chooseDate(date));
+        form.addView(field("Date", date));
+        final Spinner meet = spinner(new String[]{"Intramural Meet","District Meet","Cluster Meet","Provincial Meet","Triangular Meet","Regional Meet","Palarong Pambansa","Other"}, src.meet);
+        form.addView(field("Meet Level", meet));
