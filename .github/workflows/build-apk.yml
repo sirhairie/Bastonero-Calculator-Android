@@ -19,9 +19,14 @@ jobs:
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/parts/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
+          sed -i 's/TEST 1/TEST 2/g' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           if grep -q "android.webkit.WebView" native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
             echo "WebView reference found; refusing native build"
+            exit 1
+          fi
+          if ! grep -Fq 'String[] scores = {"","","","",""};' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
+            echo "Five-judge score storage validation failed"
             exit 1
           fi
 
@@ -47,11 +52,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST1.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST2.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK
-          path: Bastonero_Calculator_Native_v2.0_TEST1.apk
+          name: Bastonero-Native-APK-TEST2
+          path: Bastonero_Calculator_Native_v2.0_TEST2.apk
           if-no-files-found: error
