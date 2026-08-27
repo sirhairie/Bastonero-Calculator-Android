@@ -1,0 +1,99 @@
+package com.bastonero.calculator.nativeapp;
+
+import android.app.*;
+import android.os.*;
+import android.provider.MediaStore;
+import android.content.*;
+import android.graphics.*;
+import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
+import android.text.*;
+import android.text.method.ScrollingMovementMethod;
+import android.view.*;
+import android.view.inputmethod.EditorInfo;
+import android.widget.*;
+
+import org.json.*;
+
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+public class MainActivity extends Activity {
+    private static final int NAVY = Color.rgb(15,23,42);
+    private static final int BLUE = Color.rgb(37,99,235);
+    private static final int GREEN = Color.rgb(22,163,74);
+    private static final int RED = Color.rgb(220,38,38);
+    private static final int TEXT = Color.rgb(17,24,39);
+    private static final int MUTED = Color.rgb(100,116,139);
+    private static final int LINE = Color.rgb(215,222,232);
+    private static final int BG = Color.rgb(239,244,249);
+    private static final int WHITE = Color.WHITE;
+
+    private LinearLayout shell, content;
+    private final ArrayList<Competition> competitions = new ArrayList<>();
+    private Competition activeCompetition;
+    private Screen screen = Screen.HOME;
+    private Competition editingCompetition;
+    private final SimpleDateFormat dateFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+
+    enum Screen { HOME, SETUP, WORKSPACE }
+
+    static class Entry {
+        long id;
+        String name = "";
+        String school = "";
+        String[] scores = {"","","",""};
+        double penalty = 0;
+    }
+
+    static class Competition {
+        long id;
+        String date = "";
+        String meet = "Intramural Meet";
+        String venue = "";
+        String level = "Elementary";
+        String division = "Boys";
+        String event = "Individual";
+        String weapon = "Single Weapon";
+        String notes = "";
+        long nextEntryId = 1;
+        boolean scoringStarted = false;
+        ArrayList<Entry> entries = new ArrayList<>();
+    }
+
+    static class ScoreData {
+        boolean complete;
+        double[] nums;
+        double low, high, score, penalty, net, fiveTotal;
+    }
+
+    static class ResultRow {
+        Entry entry;
+        ScoreData data;
+        int rank;
+        String status;
+        String detail;
+        int accent;
+    }
+
+    @Override public void onCreate(Bundle b) {
+        super.onCreate(b);
+        getWindow().setStatusBarColor(NAVY);
+        getWindow().setNavigationBarColor(NAVY);
+        loadState();
+        buildShell();
+        showHome();
+    }
+
+    private void buildShell() {
+        shell = new LinearLayout(this);
+        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setBackgroundColor(BG);
+        shell.setLayoutParams(new LinearLayout.LayoutParams(-1,-1));
+
+        LinearLayout toolbar = new LinearLayout(this);
+        toolbar.setOrientation(LinearLayout.HORIZONTAL);
+        toolbar.setGravity(Gravity.CENTER_VERTICAL);
+        toolbar.setPadding(dp(14), dp(10), dp(10), dp(10));
+        toolbar.setBackgroundColor(NAVY);
