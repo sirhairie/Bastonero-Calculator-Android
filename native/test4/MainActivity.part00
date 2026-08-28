@@ -1,0 +1,178 @@
+package com.bastonero.calculator.nativeapp;
+
+import android.app.*;
+import android.os.*;
+import android.provider.MediaStore;
+import android.content.*;
+import android.graphics.*;
+import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
+import android.text.*;
+import android.text.method.ScrollingMovementMethod;
+import android.view.*;
+import android.view.inputmethod.EditorInfo;
+import android.widget.*;
+
+import org.json.*;
+
+import java.io.OutputStream;
+import java.util.*;
+
+public class MainActivity extends Activity {
+    private static final int BG = Color.rgb(5,18,35);
+    private static final int NAVY = Color.rgb(7,26,49);
+    private static final int CARD = Color.rgb(12,34,59);
+    private static final int CARD_2 = Color.rgb(16,42,70);
+    private static final int SURFACE = Color.rgb(19,48,79);
+    private static final int BLUE = Color.rgb(12,96,232);
+    private static final int BLUE_2 = Color.rgb(20,112,255);
+    private static final int GOLD = Color.rgb(226,176,62);
+    private static final int GOLD_2 = Color.rgb(255,199,65);
+    private static final int GREEN = Color.rgb(46,139,70);
+    private static final int RED = Color.rgb(221,42,51);
+    private static final int SILVER = Color.rgb(190,199,212);
+    private static final int BRONZE = Color.rgb(198,113,50);
+    private static final int WHITE = Color.rgb(248,250,252);
+    private static final int TEXT = Color.rgb(235,241,248);
+    private static final int MUTED = Color.rgb(163,181,201);
+    private static final int LINE = Color.rgb(55,79,105);
+    private static final int LINE_SOFT = Color.rgb(39,62,88);
+
+    private LinearLayout shell, content;
+    private ScrollView scroll;
+    private final ArrayList<Competition> competitions = new ArrayList<>();
+    private Competition activeCompetition;
+    private Competition editingCompetition;
+    private Screen screen = Screen.HOME;
+
+    enum Screen { HOME, SETUP, WORKSPACE, RANKING }
+
+    static class Entry {
+        long id;
+        String name = "";
+        String school = "";
+        String[] scores = {"","","","",""};
+        double penalty = 0;
+    }
+
+    static class Competition {
+        long id;
+        String date = "";
+        String meet = "Intramural Meet";
+        String venue = "";
+        String level = "Elementary";
+        String division = "Boys";
+        String event = "Individual";
+        String weapon = "Single Weapon";
+        String notes = "";
+        long nextEntryId = 1;
+        boolean scoringStarted = false;
+        ArrayList<Entry> entries = new ArrayList<>();
+    }
+
+    static class ScoreData {
+        boolean complete;
+        double[] nums;
+        double low, high, score, penalty, net, fiveTotal;
+    }
+
+    static class ResultRow {
+        Entry entry;
+        ScoreData data;
+        int rank;
+        String status;
+        String detail;
+        int accent;
+    }
+
+    @Override public void onCreate(Bundle state) {
+        super.onCreate(state);
+        getWindow().setStatusBarColor(BG);
+        getWindow().setNavigationBarColor(BG);
+        loadState();
+        buildShell();
+        showHome();
+    }
+
+    private void buildShell() {
+        shell = new LinearLayout(this);
+        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setBackgroundColor(BG);
+        shell.setLayoutParams(new LinearLayout.LayoutParams(-1,-1));
+        shell.setOnApplyWindowInsetsListener((v, insets) -> {
+            v.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
+            return insets;
+        });
+
+        LinearLayout toolbar = new LinearLayout(this);
+        toolbar.setOrientation(LinearLayout.HORIZONTAL);
+        toolbar.setGravity(Gravity.CENTER_VERTICAL);
+        toolbar.setPadding(dp(12),dp(9),dp(10),dp(9));
+        toolbar.setBackgroundColor(NAVY);
+
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.brand_logo);
+        logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        toolbar.addView(logo,new LinearLayout.LayoutParams(dp(50),dp(50)));
+
+        LinearLayout brand = new LinearLayout(this);
+        brand.setOrientation(LinearLayout.VERTICAL);
+        brand.setPadding(dp(8),0,dp(4),0);
+        TextView title = text("Bastonero Calculator",17,WHITE,true);
+        title.setSingleLine(true); title.setEllipsize(TextUtils.TruncateAt.END);
+        TextView sub = text("Native Android • TEST 4",9,MUTED,true);
+        sub.setSingleLine(true);
+        brand.addView(title); brand.addView(sub);
+        toolbar.addView(brand,new LinearLayout.LayoutParams(0,-2,1f));
+
+        Button home = smallButton("Home",BLUE);
+        home.setOnClickListener(v->showHome());
+        toolbar.addView(home,new LinearLayout.LayoutParams(dp(51),dp(38)));
+        Button about = outlineButton("About",GOLD);
+        about.setOnClickListener(v->showAbout());
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(54),dp(38));ap.setMargins(dp(6),0,0,0);toolbar.addView(about,ap);
+        shell.addView(toolbar,new LinearLayout.LayoutParams(-1,-2));
+
+        scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(BG);
+        content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(12),dp(12),dp(12),dp(24));
+        scroll.addView(content,new ScrollView.LayoutParams(-1,-2));
+        shell.addView(scroll,new LinearLayout.LayoutParams(-1,0,1f));
+        setContentView(shell);
+    }
+
+    private void clearContent(){content.removeAllViews();}
+
+    private void showHome(){
+        screen=Screen.HOME; activeCompetition=null; editingCompetition=null; clearContent();
+        TextView version=pill("v2.0",BG,GOLD);version.setGravity(Gravity.CENTER);content.addView(version,new LinearLayout.LayoutParams(dp(58),dp(28)));
+        Button add=primaryButton("＋  Add Competition",BLUE_2);add.setOnClickListener(v->{editingCompetition=null;showSetup();});content.addView(add,fullMargins(0,dp(12),0,dp(18),dp(54)));
+        content.addView(sectionTitle("YOUR COMPETITIONS",String.valueOf(competitions.size())));
+        if(competitions.isEmpty()){
+            LinearLayout empty=darkCard();empty.setGravity(Gravity.CENTER);empty.setPadding(dp(16),dp(34),dp(16),dp(34));
+            TextView mark=text("╳",40,MUTED,false);mark.setGravity(Gravity.CENTER);empty.addView(mark);
+            TextView t=text("No competition yet",17,WHITE,true);t.setGravity(Gravity.CENTER);t.setPadding(0,dp(12),0,0);empty.addView(t);
+            TextView b=text("Add your first competition to get started.",11,MUTED,false);b.setGravity(Gravity.CENTER);b.setPadding(0,dp(6),0,dp(16));empty.addView(b);
+            Button a=outlineButton("＋  Add Competition",BLUE_2);a.setOnClickListener(v->showSetup());empty.addView(a,new LinearLayout.LayoutParams(dp(220),dp(46)));
+            content.addView(empty,fullMargins(0,dp(10),0,0));
+        } else {
+            for(Competition c:competitions) content.addView(competitionCard(c),fullMargins(0,dp(10),0,0));
+        }
+        addFooter();
+    }
+
+    private View competitionCard(Competition c){
+        LinearLayout card=darkCard();
+        LinearLayout top=row();top.setGravity(Gravity.CENTER_VERTICAL);
+        TextView meet=pill(c.meet,Color.WHITE,RED);top.addView(meet);
+        Space space=new Space(this);top.addView(space,new LinearLayout.LayoutParams(0,1,1f));
+        TextView phase=pill(c.scoringStarted?"SCORING":"REGISTERING",Color.WHITE,c.scoringStarted?BLUE_2:Color.rgb(71,85,105));top.addView(phase);card.addView(top);
+        TextView date=text((c.date.isEmpty()?"No date":c.date)+(c.venue.isEmpty()?"":"  •  "+c.venue),12,MUTED,false);date.setPadding(0,dp(10),0,dp(10));card.addView(date);
+        LinearLayout meta1=row();meta1.addView(metaBox("LEVEL",c.level),weight());LinearLayout.LayoutParams m2=weight();m2.setMargins(dp(7),0,0,0);meta1.addView(metaBox("TYPE",isTeam(c)?"Team":"Individual"),m2);card.addView(meta1);
+        LinearLayout meta2=row();meta2.setPadding(0,dp(7),0,0);meta2.addView(metaBox("DIVISION",c.division),weight());LinearLayout.LayoutParams m4=weight();m4.setMargins(dp(7),0,0,0);meta2.addView(metaBox("ANYO / WEAPON",c.weapon),m4);card.addView(meta2);
+        ArrayList<ResultRow> rows=analyze(c);String lead=rows.isEmpty()?"—":fmt(rows.get(0).data.net);
+        LinearLayout stats=row();stats.setPadding(0,dp(10),0,dp(10));stats.addView(homeStat(String.valueOf(c.entries.size()),"Competitors"),weight());LinearLayout.LayoutParams s2=weight();s2.setMargins(dp(6),0,0,0);stats.addView(homeStat(String.valueOf(completedCount(c)),"Scored"),s2);LinearLayout.LayoutParams s3=weight();s3.setMargins(dp(6),0,0,0);stats.addView(homeStat(lead,"Leader Score"),s3);card.addView(stats);
+        Button open=primaryButton("Open Competition   →",BLUE);open.setOnClickListener(v->{activeCompetition=c;showWorkspace();});card.addView(open,new LinearLayout.LayoutParams(-1,dp(48)));
