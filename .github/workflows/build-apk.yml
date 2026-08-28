@@ -15,11 +15,25 @@ jobs:
       - name: Checkout native branch
         uses: actions/checkout@v4
 
+      - name: Restore Bastonero brand logo
+        run: |
+          mkdir -p native/app/src/main/res/drawable
+          LOGO_PATH=$(unzip -Z1 Bastonero_Android_Project.zip | grep -Ei '(^|/)brand_logo\.png$' | head -n 1 || true)
+          if [ -z "$LOGO_PATH" ]; then
+            LOGO_PATH=$(unzip -Z1 Bastonero_Android_Project.zip | grep -Ei '(^|/)(app_logo|logo)\.png$' | head -n 1 || true)
+          fi
+          if [ -z "$LOGO_PATH" ]; then
+            echo "Bastonero logo not found in preserved Android project"
+            exit 1
+          fi
+          echo "Using logo: $LOGO_PATH"
+          unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
+          test -s native/app/src/main/res/drawable/brand_logo.png
+
       - name: Assemble native MainActivity source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/parts/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
-          sed -i 's/TEST 1/TEST 2/g' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           if grep -q "android.webkit.WebView" native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
             echo "WebView reference found; refusing native build"
@@ -27,6 +41,10 @@ jobs:
           fi
           if ! grep -Fq 'String[] scores = {"","","","",""};' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
             echo "Five-judge score storage validation failed"
+            exit 1
+          fi
+          if ! grep -Fq 'Native Android • TEST 3' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
+            echo "TEST 3 source marker missing"
             exit 1
           fi
 
@@ -52,11 +70,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST2.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST3.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST2
-          path: Bastonero_Calculator_Native_v2.0_TEST2.apk
+          name: Bastonero-Native-APK-TEST3
+          path: Bastonero_Calculator_Native_v2.0_TEST3.apk
           if-no-files-found: error
