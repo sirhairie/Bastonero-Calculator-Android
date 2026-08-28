@@ -1,0 +1,44 @@
+    private EditText input(String val,String hint,boolean number){EditText e=new EditText(this);e.setText(val==null?"":val);e.setHint(hint);e.setTextColor(WHITE);e.setHintTextColor(Color.rgb(112,133,156));e.setTextSize(13);e.setPadding(dp(10),dp(8),dp(10),dp(8));e.setBackground(round(CARD_2,dp(10),LINE));if(number)e.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);return e;}
+    private void styleJudgeInput(EditText e,String value){boolean bad=false;String v=value==null?"":value.trim();if(!v.isEmpty()){try{double n=Double.parseDouble(v);bad=n<7||n>10;}catch(Exception ex){bad=true;}}e.setBackground(round(bad?Color.rgb(70,24,35):CARD_2,dp(9),bad?Color.rgb(244,90,113):LINE));}
+
+    private Spinner spinner(String[] values,String selected){Spinner s=new Spinner(this);DarkSpinnerAdapter a=new DarkSpinnerAdapter(values);s.setAdapter(a);for(int i=0;i<values.length;i++)if(values[i].equals(selected)){s.setSelection(i);break;}s.setBackground(round(CARD_2,dp(10),LINE));s.setPadding(dp(8),0,dp(8),0);return s;}
+    private class DarkSpinnerAdapter extends ArrayAdapter<String>{DarkSpinnerAdapter(String[] items){super(MainActivity.this,android.R.layout.simple_spinner_item,items);setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);}@Override public View getView(int position,View convertView,android.view.ViewGroup parent){TextView v=(TextView)super.getView(position,convertView,parent);v.setTextColor(WHITE);v.setTextSize(13);v.setPadding(dp(7),0,dp(7),0);return v;}@Override public View getDropDownView(int position,View convertView,android.view.ViewGroup parent){TextView v=(TextView)super.getDropDownView(position,convertView,parent);v.setTextColor(Color.rgb(20,30,42));v.setBackgroundColor(Color.WHITE);v.setTextSize(13);v.setPadding(dp(12),dp(10),dp(12),dp(10));return v;}}
+    private LinearLayout field(String label,View input){LinearLayout f=new LinearLayout(this);f.setOrientation(LinearLayout.VERTICAL);TextView l=text(label,9,MUTED,true);l.setPadding(dp(2),0,0,dp(5));f.addView(l);f.addView(input,new LinearLayout.LayoutParams(-1,input instanceof Spinner?dp(50):-2));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,0,0,dp(11));f.setLayoutParams(p);return f;}
+
+    private void setSpinnerItems(Spinner s,String[] values,String preferred){String keep=preferred==null?selected(s):preferred;DarkSpinnerAdapter a=new DarkSpinnerAdapter(values);s.setAdapter(a);for(int i=0;i<values.length;i++)if(values[i].equals(keep)){s.setSelection(i);return;}if(values.length>0)s.setSelection(0);}
+    private void syncCompetitionSpinners(Spinner level,Spinner event,Spinner division,Spinner weapon,String preferredEvent,String preferredDivision,String preferredWeapon){String lv=selected(level);String ev=preferredEvent==null?selected(event):preferredEvent;if("Elementary".equals(lv))setSpinnerItems(event,new String[]{"Individual","Synchronized / Team","Synchronized Mixed"},ev);else setSpinnerItems(event,new String[]{"Individual","Synchronized / Team"},ev);syncDivisionWeapon(level,event,division,weapon,preferredDivision,preferredWeapon);}
+    private void syncDivisionWeapon(Spinner level,Spinner event,Spinner division,Spinner weapon,String preferredDivision,String preferredWeapon){String lv=selected(level),ev=selected(event);if("Elementary".equals(lv)&&"Synchronized Mixed".equals(ev)){setSpinnerItems(division,new String[]{"Mixed"},"Mixed");setSpinnerItems(weapon,new String[]{"Identical Double Weapon"},"Identical Double Weapon");}else{setSpinnerItems(division,new String[]{"Boys","Girls"},preferredDivision);setSpinnerItems(weapon,new String[]{"Single Weapon","Identical Double Weapon","Espada y Daga"},preferredWeapon);}}
+
+    private void chooseDate(EditText target){Calendar cal=Calendar.getInstance();new DatePickerDialog(this,(v,y,m,d)->target.setText(String.format(Locale.US,"%04d-%02d-%02d",y,m+1,d)),cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH)).show();}
+    private long nextCompetitionId(){long max=0;for(Competition c:competitions)max=Math.max(max,c.id);return max+1;}
+    private int completedCount(Competition c){int n=0;for(Entry e:c.entries)if(scoreData(e).complete)n++;return n;}
+    private boolean isTeam(Competition c){return "Synchronized / Team".equals(c.event)||"Synchronized Mixed".equals(c.event);}
+    private String entryLabel(Competition c){return isTeam(c)?"Team":"Competitor";}
+    private String safeName(String s){return s==null||s.trim().isEmpty()?"Unnamed":s.trim();}
+    private boolean eq(double a,double b){return Math.abs(a-b)<0.000001;}
+    private String fmt(double v){return String.format(Locale.US,"%.2f",v);}
+    private String fmt1(double v){return String.format(Locale.US,"%.1f",v);}
+    private String ordinal(int n){int v=n%100;if(v>=11&&v<=13)return n+"th";switch(n%10){case 1:return n+"st";case 2:return n+"nd";case 3:return n+"rd";default:return n+"th";}}
+    private String selected(Spinner s){Object o=s.getSelectedItem();return o==null?"":String.valueOf(o);}
+    private boolean hasInvalidScore(Entry e){for(String v:e.scores){if(v==null||v.trim().isEmpty())continue;try{double n=Double.parseDouble(v);if(n<7||n>10)return true;}catch(Exception ex){return true;}}return false;}
+    private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
+    private void hideKeyboard(){try{View v=getCurrentFocus();if(v!=null)((android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(v.getWindowToken(),0);}catch(Exception ignored){}}
+    private void refreshAt(long entryId){showWorkspace();jumpToScore(entryId);}
+    private void jumpToScore(long entryId){if(scroll==null)return;scroll.post(()->{View target=content.findViewWithTag("score_"+entryId);if(target!=null){int y=0;View cur=target;while(cur!=null&&cur!=content){y+=cur.getTop();if(!(cur.getParent() instanceof View))break;cur=(View)cur.getParent();}scroll.smoothScrollTo(0,Math.max(0,y-dp(14)));}});}
+    private void showSavedDialog(){AlertDialog d=new AlertDialog.Builder(this).setTitle("Result Successfully Saved").setMessage("Saved to Pictures/Bastonero").create();d.show();new Handler(Looper.getMainLooper()).postDelayed(()->{if(d.isShowing())d.dismiss();},1700);}
+
+    private LinearLayout.LayoutParams weight(){return new LinearLayout.LayoutParams(0,-2,1f);}
+    private LinearLayout.LayoutParams fullMargins(int l,int t,int r,int b){return fullMargins(l,t,r,b,-2);}
+    private LinearLayout.LayoutParams fullMargins(int l,int t,int r,int b,int h){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,h);p.setMargins(l,t,r,b);return p;}
+    private GradientDrawable round(int fill,int radius,int stroke){GradientDrawable g=new GradientDrawable();g.setColor(fill);g.setCornerRadius(radius);if(stroke!=0)g.setStroke(dp(1),stroke);return g;}
+    private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
+
+    private void drawText(Canvas cv,Paint p,String s,float x,float y,float size,int color,boolean bold){drawText(cv,p,s,x,y,size,color,bold,Paint.Align.LEFT);}
+    private void drawTextRight(Canvas cv,Paint p,String s,float x,float y,float size,int color,boolean bold){drawText(cv,p,s,x,y,size,color,bold,Paint.Align.RIGHT);}
+    private void drawText(Canvas cv,Paint p,String s,float x,float y,float size,int color,boolean bold,Paint.Align align){p.setColor(color);p.setTextSize(size);p.setTypeface(bold?Typeface.DEFAULT_BOLD:Typeface.DEFAULT);p.setTextAlign(align);cv.drawText(s,x,y,p);}
+
+    abstract static class SimpleWatcher implements TextWatcher{public void beforeTextChanged(CharSequence s,int st,int c,int a){}public void onTextChanged(CharSequence s,int st,int b,int c){}}
+    abstract static class SimpleItemSelected implements AdapterView.OnItemSelectedListener{public void onNothingSelected(AdapterView<?> p){}}
+
+    @Override public void onBackPressed(){if(screen==Screen.HOME)super.onBackPressed();else if(screen==Screen.RANKING)showWorkspace();else if(screen==Screen.WORKSPACE)showHome();else if(screen==Screen.SETUP&&editingCompetition!=null){activeCompetition=editingCompetition;editingCompetition=null;showWorkspace();}else showHome();}
+}
