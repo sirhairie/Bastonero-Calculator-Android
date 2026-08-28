@@ -35,6 +35,7 @@ jobs:
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           python3 native/test5/prepare.py
           python3 native/test6/patch.py
+          python3 native/test6/hotfix.py
           test -s native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           if grep -q "android.webkit.WebView" native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
             echo "WebView reference found; refusing native build"
