@@ -26,35 +26,27 @@ jobs:
             echo "Bastonero logo not found in preserved Android project"
             exit 1
           fi
-          echo "Using logo: $LOGO_PATH"
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/brand_logo.png
 
-      - name: Assemble premium TEST 4 native source
+      - name: Assemble TEST 5 native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
+          python3 native/test5/prepare.py
           test -s native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           if grep -q "android.webkit.WebView" native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
             echo "WebView reference found; refusing native build"
             exit 1
           fi
-          if ! grep -Fq 'String[] scores = {"","","","",""};' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
-            echo "Five-judge score storage validation failed"
-            exit 1
-          fi
-          if ! grep -Fq 'Native Android • TEST 4' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
-            echo "TEST 4 source marker missing"
-            exit 1
-          fi
-          if ! grep -Fq 'private void showRanking()' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
-            echo "Premium ranking screen missing"
-            exit 1
-          fi
-          if ! grep -Fq 'private static final int GOLD' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java; then
-            echo "Premium gold theme marker missing"
-            exit 1
-          fi
+          grep -Fq 'String[] scores = {"","","","",""};' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
+          grep -Fq 'Native Android • TEST 5' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
+          grep -Fq 'private void showRanking()' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
+          grep -Fq 'private FrameLayout medalCoin' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
+          grep -Fq 'private GradientDrawable gloss' native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
+          test -s native/app/src/main/res/drawable/ic_medal.xml
+          test -s native/app/src/main/res/drawable/ic_sticks.xml
+          test -s native/app/src/main/res/drawable/ic_trophy.xml
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -78,11 +70,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST4.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST5.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST4
-          path: Bastonero_Calculator_Native_v2.0_TEST4.apk
+          name: Bastonero-Native-APK-TEST5
+          path: Bastonero_Calculator_Native_v2.0_TEST5.apk
           if-no-files-found: error
