@@ -10,7 +10,7 @@
     private void chooseDate(EditText target){Calendar cal=Calendar.getInstance();new DatePickerDialog(this,(v,y,m,d)->target.setText(String.format(Locale.US,"%04d-%02d-%02d",y,m+1,d)),cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH)).show();}
     private long nextCompetitionId(){long max=0;for(Competition c:competitions)max=Math.max(max,c.id);return max+1;}
     private int completedCount(Competition c){int n=0;for(Entry e:c.entries)if(scoreData(e).complete)n++;return n;}
-    private boolean isTeam(Competition c){return "Synchronized / Team".equals(c.event);}
+    private boolean isTeam(Competition c){return "Synchronized / Team".equals(c.event)||"Synchronized Mixed".equals(c.event);}
     private String entryLabel(Competition c){return isTeam(c)?"Team":"Competitor";}
     private String safeName(String s){return s==null||s.trim().isEmpty()?"Unnamed":s.trim();}
     private boolean eq(double a,double b){return Math.abs(a-b)<0.000001;}
