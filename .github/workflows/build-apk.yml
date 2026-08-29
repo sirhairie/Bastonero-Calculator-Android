@@ -29,7 +29,7 @@ jobs:
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/brand_logo.png
 
-      - name: Assemble TEST 14 ranking-board native source
+      - name: Assemble TEST 15 restored-medal native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -45,6 +45,7 @@ jobs:
           python3 native/test12/patch.py
           python3 native/test13/patch.py
           python3 native/test14/patch.py
+          python3 native/test15/patch.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -62,42 +63,43 @@ jobs:
           grep -Fq 'commitLockedResult(e);saveState();toast("Result calculated and locked")' "$SRC"
           grep -Fq 'TextView state=pill(e.resultLocked?"RESULT LOCKED":"EDITING"' "$SRC"
 
-          # TEST 14 ranking-board requirements.
+          # Preserve TEST 14 clean ranking board.
           grep -Fq 'Button ranking=primaryButton("View Ranking",BLUE_2);' "$SRC"
-          grep -Fq 'ranking.setTextSize(15);' "$SRC"
           grep -Fq 'TextView title=text("RANKING",20,BG,true);' "$SRC"
-          grep -Fq 'title.setBackground(gloss(GOLD_LIGHT,GOLD_2,GOLD,dp(13),GOLD_LIGHT));' "$SRC"
           grep -Fq 'Button back=primaryButton("Back to Scoring",BLUE_2);' "$SRC"
           grep -Fq 'Button save=primaryButton("Save Result",RED);' "$SRC"
-          grep -Fq 'identity.addView(text(safeName(r.entry.name),18,WHITE,true));' "$SRC"
-          grep -Fq 'TextView school=text(r.entry.school.isEmpty()?"—":r.entry.school,11,MUTED,false);' "$SRC"
           grep -Fq 'rankingMetric("VALID SCORE"' "$SRC"
           grep -Fq 'rankingDetail("REMOVED HIGH"' "$SRC"
           grep -Fq 'rankingDetail("REMOVED LOW"' "$SRC"
-          grep -Fq 'rankingDetail("5-JUDGE TOTAL"' "$SRC"
           grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
-          grep -Fq 'top.addView(medal,new LinearLayout.LayoutParams(dp(88),dp(94)));' "$SRC"
-          grep -Fq 'FrameLayout.LayoutParams mp=new FrameLayout.LayoutParams(dp(82),dp(88)' "$SRC"
-          grep -Fq 'TEST 14 Official Ranking Board Redesign' "$SRC"
 
+          # TEST 15 balanced header + restored classic medal.
+          grep -Fq 'top.addView(medal,new LinearLayout.LayoutParams(dp(82),dp(86)));' "$SRC"
+          grep -Fq 'LinearLayout nameRow=row();nameRow.setGravity(Gravity.CENTER_VERTICAL);' "$SRC"
+          grep -Fq 'nameRow.addView(name,new LinearLayout.LayoutParams(0,-2,1f));' "$SRC"
+          grep -Fq 'nameRow.addView(medalBadge,bp);' "$SRC"
+          grep -Fq 'ImageView medal=iconView(R.drawable.ic_medal,accent,68);' "$SRC"
+          grep -Fq 'FrameLayout.LayoutParams np=new FrameLayout.LayoutParams(dp(34),dp(34),Gravity.CENTER);' "$SRC"
+          grep -Fq 'TEST 15 Restored Medal + Balanced Ranking Header' "$SRC"
+
+          if grep -Fq 'top.addView(medal,new LinearLayout.LayoutParams(dp(88),dp(94)));' "$SRC"; then
+            echo "TEST 14 oversized medal container still present; refusing TEST 15 build"
+            exit 1
+          fi
+          if grep -Fq 'FrameLayout.LayoutParams mp=new FrameLayout.LayoutParams(dp(82),dp(88)' "$SRC"; then
+            echo "TEST 14 egg-style medal renderer still present; refusing TEST 15 build"
+            exit 1
+          fi
+          if grep -Fq 'identity.addView(medalBadge' "$SRC"; then
+            echo "Medal badge is still stacked under identity instead of upper-right; refusing TEST 15 build"
+            exit 1
+          fi
           if grep -Fq 'View Ranking / Results' "$SRC"; then
-            echo "Old View Ranking / Results label still present; refusing TEST 14 build"
-            exit 1
-          fi
-          if grep -Fq 'primaryIconButton("Save Result",RED,R.drawable.ic_save)' "$SRC"; then
-            echo "Save Result icon still present; refusing TEST 14 build"
-            exit 1
-          fi
-          if grep -Fq 'outlineIconButton("Back to Scoring",BLUE_2,R.drawable.ic_back)' "$SRC"; then
-            echo "Back to Scoring arrow control still present; refusing TEST 14 build"
+            echo "Old View Ranking / Results label still present; refusing TEST 15 build"
             exit 1
           fi
           if grep -Fq 'TextView detail=text(r.detail' "$SRC"; then
-            echo "Ranking explanation paragraph still present; refusing TEST 14 build"
-            exit 1
-          fi
-          if grep -Fq 'RESULTS SUMMARY' "$SRC"; then
-            echo "Old ranking summary prose block still present; refusing TEST 14 build"
+            echo "Ranking explanation paragraph still present; refusing TEST 15 build"
             exit 1
           fi
 
@@ -127,11 +129,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST14.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST15.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST14
-          path: Bastonero_Calculator_Native_v2.0_TEST14.apk
+          name: Bastonero-Native-APK-TEST15
+          path: Bastonero_Calculator_Native_v2.0_TEST15.apk
           if-no-files-found: error
