@@ -29,7 +29,7 @@ jobs:
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/brand_logo.png
 
-      - name: Assemble TEST 8 icon-only-controls native source
+      - name: Assemble TEST 9 competition-setup native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -38,6 +38,7 @@ jobs:
           python3 native/test6/hotfix.py
           python3 native/test7/patch.py
           python3 native/test8/patch.py
+          python3 native/test9/patch.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -46,22 +47,23 @@ jobs:
           fi
           grep -Fq 'String[] scores = {"","","","",""};' "$SRC"
           grep -Fq 'TextView title = text("Bastonero Calculator",16,WHITE,true);' "$SRC"
-          grep -Fq 'title.setSingleLine(true);' "$SRC"
           grep -Fq 'Button add=primaryButton("Add Competition",GREEN);' "$SRC"
           grep -Fq 'Button open=primaryButton("Open Competition",BLUE_2);' "$SRC"
-          grep -Fq 'ImageView icon=iconView(iconRes,active?WHITE:BG,active?21:20);' "$SRC"
-          grep -Fq 'TEST 8 Precision UI' "$SRC"
+          grep -Fq 'Spinner.MODE_DROPDOWN' "$SRC"
+          grep -Fq 'Select Competition Date' "$SRC"
+          grep -Fq 'content.addView(save,new LinearLayout.LayoutParams(-1,dp(54)));' "$SRC"
+          grep -Fq 'TEST 9 Precision UI' "$SRC"
           grep -Fq 'private void showRanking()' "$SRC"
-          if grep -Fq 'primaryIconButton("Add Competition"' "$SRC"; then
-            echo "Add Competition still has icon; refusing TEST 8 build"
+          if grep -Fq 'Optional notes' "$SRC"; then
+            echo "Notes input still present; refusing TEST 9 build"
             exit 1
           fi
-          if grep -Fq 'primaryIconButton("Open Competition' "$SRC"; then
-            echo "Open Competition still has trophy icon; refusing TEST 8 build"
+          if grep -Fq 'Button cancel=outlineButton("Cancel",RED)' "$SRC"; then
+            echo "Competition setup Cancel button still present; refusing TEST 9 build"
             exit 1
           fi
-          if grep -Fq 'Open Competition   →' "$SRC"; then
-            echo "Open Competition still has right arrow; refusing TEST 8 build"
+          if grep -Fq 'Button a=primaryButton("Add Competition",GREEN);' "$SRC"; then
+            echo "Duplicate empty-state Add Competition button still present; refusing TEST 9 build"
             exit 1
           fi
           test -s native/app/src/main/res/drawable/ic_home.xml
@@ -90,11 +92,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST8.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST9.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST8
-          path: Bastonero_Calculator_Native_v2.0_TEST8.apk
+          name: Bastonero-Native-APK-TEST9
+          path: Bastonero_Calculator_Native_v2.0_TEST9.apk
           if-no-files-found: error
