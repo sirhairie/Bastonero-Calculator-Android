@@ -39,6 +39,7 @@ jobs:
           python3 native/test7/patch.py
           python3 native/test8/patch.py
           python3 native/test9/patch.py
+          python3 native/test9/hotfix.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -51,6 +52,7 @@ jobs:
           grep -Fq 'Button open=primaryButton("Open Competition",BLUE_2);' "$SRC"
           grep -Fq 'Spinner.MODE_DROPDOWN' "$SRC"
           grep -Fq 'Select Competition Date' "$SRC"
+          grep -Fq 'current.matches("\\d{4}-\\d{2}-\\d{2}")' "$SRC"
           grep -Fq 'content.addView(save,new LinearLayout.LayoutParams(-1,dp(54)));' "$SRC"
           grep -Fq 'TEST 9 Precision UI' "$SRC"
           grep -Fq 'private void showRanking()' "$SRC"
