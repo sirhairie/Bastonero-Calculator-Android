@@ -2,7 +2,7 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/brand_logo"
-        android:label="Bastonero Native T6"
+        android:label="Bastonero Native T7"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
