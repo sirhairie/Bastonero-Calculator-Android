@@ -29,7 +29,7 @@ jobs:
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/brand_logo.png
 
-      - name: Assemble TEST 11 refined registration native source
+      - name: Assemble TEST 12 registration-UX native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -42,6 +42,7 @@ jobs:
           python3 native/test9/hotfix.py
           python3 native/test10/patch.py
           python3 native/test11/patch.py
+          python3 native/test12/patch.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -49,36 +50,32 @@ jobs:
             exit 1
           fi
           grep -Fq 'String[] scores = {"","","","",""};' "$SRC"
-          grep -Fq 'TextView title = text("Bastonero Calculator",16,WHITE,true);' "$SRC"
-          grep -Fq 'Button add=primaryButton("Add Competition",GREEN);' "$SRC"
-          grep -Fq 'Button open=primaryButton("Open Competition",BLUE_2);' "$SRC"
           grep -Fq 'showPremiumSpinnerPopup' "$SRC"
           grep -Fq 'applyPremiumSpinnerItems' "$SRC"
-          grep -Fq 'heading.setGravity(Gravity.CENTER_HORIZONTAL)' "$SRC"
-          grep -Fq 'private LinearLayout iconActionButton(int iconRes,int fill)' "$SRC"
           grep -Fq 'Button reopen=primaryButton("Edit Registration",GREEN);' "$SRC"
-          grep -Fq 'TextView label=text("J"+(idx+1),10,MUTED,true);' "$SRC"
-          grep -Fq 'final Dialog d=new Dialog(this);' "$SRC"
-          grep -Fq 'panel=darkCard(GOLD)' "$SRC"
-          grep -Fq 'LinearLayout add=iconActionButton(R.drawable.ic_add,BLUE_2)' "$SRC"
-          grep -Fq 'LinearLayout edit=iconActionButton(R.drawable.ic_edit,BLUE_2)' "$SRC"
-          grep -Fq 'LinearLayout remove=iconActionButton(R.drawable.ic_delete,RED)' "$SRC"
-          grep -Fq 'TEST 11 Icon Actions + Premium Registration Dialog' "$SRC"
+          grep -Fq 'Button proceed=primaryButton("Proceed to Judge Scoring",BLUE_2);' "$SRC"
+          grep -Fq 'TextView num=circleNumber(String.valueOf(index+1),BLUE_2);' "$SRC"
+          grep -Fq 'LinearLayout edit=iconActionButton(R.drawable.ic_edit,GREEN);' "$SRC"
+          grep -Fq 'LinearLayout remove=iconActionButton(R.drawable.ic_delete,RED);' "$SRC"
+          grep -Fq 'words.addView(text(c.date.isEmpty()?"No date":c.date,13,WHITE,true));' "$SRC"
+          grep -Fq 'if(!c.venue.isEmpty())words.addView(text(c.venue,11,WHITE,true));' "$SRC"
+          grep -Fq 'Button update=primaryButton(d.complete?"Update Result":"Calculate",BLUE_2);' "$SRC"
+          grep -Fq 'title.setGravity(Gravity.CENTER);' "$SRC"
+          grep -Fq 'sub.setGravity(Gravity.CENTER);' "$SRC"
+          grep -Fq 'Button cancel=primaryButton("Cancel",RED);' "$SRC"
+          grep -Fq 'actions.addView(save,new LinearLayout.LayoutParams(0,dp(46),1f));' "$SRC"
+          grep -Fq 'TEST 12 Registration UX + Clean Competition Workspace' "$SRC"
           grep -Fq 'private void showRanking()' "$SRC"
-          if grep -Fq 'Button edit=outlineIconButton("Edit Competition"' "$SRC"; then
-            echo "Text Edit Competition control still present; refusing TEST 11 build"
+          if grep -Fq 'Proceed to Judge Scoring   →' "$SRC"; then
+            echo "Proceed arrow still present; refusing TEST 12 build"
             exit 1
           fi
-          if grep -Fq 'Button del=outlineIconButton("Delete"' "$SRC"; then
-            echo "Text Delete control still present; refusing TEST 11 build"
+          if grep -Fq 'field(isTeam(c)?"TEAM NAME":"COMPETITOR NAME",name)' "$SRC"; then
+            echo "Duplicate registration field label still present; refusing TEST 12 build"
             exit 1
           fi
-          if grep -Fq 'Button edit=outlineButton("Edit",GREEN)' "$SRC"; then
-            echo "Text roster Edit control still present; refusing TEST 11 build"
-            exit 1
-          fi
-          if grep -Fq 'Button remove=outlineButton("Remove",RED)' "$SRC"; then
-            echo "Text roster Remove control still present; refusing TEST 11 build"
+          if grep -Fq 'primaryIconButton(d.complete?"Update Result":"Calculate / Update"' "$SRC"; then
+            echo "Old scoring edit-icon button still present; refusing TEST 12 build"
             exit 1
           fi
           test -s native/app/src/main/res/drawable/ic_home.xml
@@ -110,11 +107,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST11.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST12.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST11
-          path: Bastonero_Calculator_Native_v2.0_TEST11.apk
+          name: Bastonero-Native-APK-TEST12
+          path: Bastonero_Calculator_Native_v2.0_TEST12.apk
           if-no-files-found: error
