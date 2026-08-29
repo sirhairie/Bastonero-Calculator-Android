@@ -29,7 +29,7 @@ jobs:
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/brand_logo.png
 
-      - name: Assemble TEST 10 unified-dropdown native source
+      - name: Assemble TEST 11 refined registration native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -41,6 +41,7 @@ jobs:
           python3 native/test9/patch.py
           python3 native/test9/hotfix.py
           python3 native/test10/patch.py
+          python3 native/test11/patch.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -53,28 +54,38 @@ jobs:
           grep -Fq 'Button open=primaryButton("Open Competition",BLUE_2);' "$SRC"
           grep -Fq 'showPremiumSpinnerPopup' "$SRC"
           grep -Fq 'applyPremiumSpinnerItems' "$SRC"
-          grep -Fq 'popup.setHeight(Math.min(natural,maxHeight));' "$SRC"
           grep -Fq 'heading.setGravity(Gravity.CENTER_HORIZONTAL)' "$SRC"
-          grep -Fq 'hs.setGravity(Gravity.CENTER)' "$SRC"
-          grep -Fq 'Select Competition Date' "$SRC"
-          grep -Fq 'current.matches("\\d{4}-\\d{2}-\\d{2}")' "$SRC"
-          grep -Fq 'content.addView(save,new LinearLayout.LayoutParams(-1,dp(54)));' "$SRC"
-          grep -Fq 'TEST 10 Unified Dropdowns + Centered Competition Information Header' "$SRC"
+          grep -Fq 'private LinearLayout iconActionButton(int iconRes,int fill)' "$SRC"
+          grep -Fq 'Button reopen=primaryButton("Edit Registration",GREEN);' "$SRC"
+          grep -Fq 'TextView label=text("J"+(idx+1),10,MUTED,true);' "$SRC"
+          grep -Fq 'final Dialog d=new Dialog(this);' "$SRC"
+          grep -Fq 'panel=darkCard(GOLD)' "$SRC"
+          grep -Fq 'LinearLayout add=iconActionButton(R.drawable.ic_add,BLUE_2)' "$SRC"
+          grep -Fq 'LinearLayout edit=iconActionButton(R.drawable.ic_edit,BLUE_2)' "$SRC"
+          grep -Fq 'LinearLayout remove=iconActionButton(R.drawable.ic_delete,RED)' "$SRC"
+          grep -Fq 'TEST 11 Icon Actions + Premium Registration Dialog' "$SRC"
           grep -Fq 'private void showRanking()' "$SRC"
-          if grep -Fq 'Optional notes' "$SRC"; then
-            echo "Notes input still present; refusing TEST 10 build"
+          if grep -Fq 'Button edit=outlineIconButton("Edit Competition"' "$SRC"; then
+            echo "Text Edit Competition control still present; refusing TEST 11 build"
             exit 1
           fi
-          if grep -Fq 'Button cancel=outlineButton("Cancel",RED)' "$SRC"; then
-            echo "Competition setup Cancel button still present; refusing TEST 10 build"
+          if grep -Fq 'Button del=outlineIconButton("Delete"' "$SRC"; then
+            echo "Text Delete control still present; refusing TEST 11 build"
             exit 1
           fi
-          if grep -Fq 'Button a=primaryButton("Add Competition",GREEN);' "$SRC"; then
-            echo "Duplicate empty-state Add Competition button still present; refusing TEST 10 build"
+          if grep -Fq 'Button edit=outlineButton("Edit",GREEN)' "$SRC"; then
+            echo "Text roster Edit control still present; refusing TEST 11 build"
+            exit 1
+          fi
+          if grep -Fq 'Button remove=outlineButton("Remove",RED)' "$SRC"; then
+            echo "Text roster Remove control still present; refusing TEST 11 build"
             exit 1
           fi
           test -s native/app/src/main/res/drawable/ic_home.xml
           test -s native/app/src/main/res/drawable/ic_info.xml
+          test -s native/app/src/main/res/drawable/ic_edit.xml
+          test -s native/app/src/main/res/drawable/ic_delete.xml
+          test -s native/app/src/main/res/drawable/ic_add.xml
           test -s native/app/src/main/res/drawable/ic_medal.xml
 
       - name: Set up Java 17
@@ -99,11 +110,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST10.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST11.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST10
-          path: Bastonero_Calculator_Native_v2.0_TEST10.apk
+          name: Bastonero-Native-APK-TEST11
+          path: Bastonero_Calculator_Native_v2.0_TEST11.apk
           if-no-files-found: error
