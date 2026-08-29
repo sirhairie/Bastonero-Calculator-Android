@@ -29,7 +29,7 @@ jobs:
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/brand_logo.png
 
-      - name: Assemble TEST 12 registration-UX native source
+      - name: Assemble TEST 13 result-lock native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -43,6 +43,7 @@ jobs:
           python3 native/test10/patch.py
           python3 native/test11/patch.py
           python3 native/test12/patch.py
+          python3 native/test13/patch.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -50,32 +51,27 @@ jobs:
             exit 1
           fi
           grep -Fq 'String[] scores = {"","","","",""};' "$SRC"
+          grep -Fq 'boolean hasLockedResult = false;' "$SRC"
+          grep -Fq 'boolean resultLocked = false;' "$SRC"
+          grep -Fq 'String[] lockedScores = {"","","","",""};' "$SRC"
+          grep -Fq 'private ScoreData lockedScoreData(Entry e)' "$SRC"
+          grep -Fq 'private void commitLockedResult(Entry e)' "$SRC"
+          grep -Fq 'ScoreData d=lockedScoreData(e);' "$SRC"
+          grep -Fq 'TextView state=pill(e.resultLocked?"RESULT LOCKED":"EDITING"' "$SRC"
+          grep -Fq 'Button action=primaryButton(e.resultLocked?"Update Result":"Calculate",e.resultLocked?RED:BLUE_2);' "$SRC"
+          grep -Fq 'e.resultLocked=false;saveState();refreshAt(e.id);return;' "$SRC"
+          grep -Fq 'commitLockedResult(e);saveState();toast("Result calculated and locked")' "$SRC"
+          grep -Fq 'minus.setEnabled(editable);plus.setEnabled(editable)' "$SRC"
+          grep -Fq 'if(e.resultLocked){input.setFocusable(false)' "$SRC"
+          grep -Fq 'j.put("hasLockedResult",e.hasLockedResult);' "$SRC"
+          grep -Fq 'j.put("lockedScores",ls);' "$SRC"
+          grep -Fq 'TEST 13 Result Lock Workflow' "$SRC"
           grep -Fq 'showPremiumSpinnerPopup' "$SRC"
-          grep -Fq 'applyPremiumSpinnerItems' "$SRC"
-          grep -Fq 'Button reopen=primaryButton("Edit Registration",GREEN);' "$SRC"
           grep -Fq 'Button proceed=primaryButton("Proceed to Judge Scoring",BLUE_2);' "$SRC"
-          grep -Fq 'TextView num=circleNumber(String.valueOf(index+1),BLUE_2);' "$SRC"
           grep -Fq 'LinearLayout edit=iconActionButton(R.drawable.ic_edit,GREEN);' "$SRC"
-          grep -Fq 'LinearLayout remove=iconActionButton(R.drawable.ic_delete,RED);' "$SRC"
-          grep -Fq 'words.addView(text(c.date.isEmpty()?"No date":c.date,13,WHITE,true));' "$SRC"
-          grep -Fq 'if(!c.venue.isEmpty())words.addView(text(c.venue,11,WHITE,true));' "$SRC"
-          grep -Fq 'Button update=primaryButton(d.complete?"Update Result":"Calculate",BLUE_2);' "$SRC"
-          grep -Fq 'title.setGravity(Gravity.CENTER);' "$SRC"
-          grep -Fq 'sub.setGravity(Gravity.CENTER);' "$SRC"
-          grep -Fq 'Button cancel=primaryButton("Cancel",RED);' "$SRC"
-          grep -Fq 'actions.addView(save,new LinearLayout.LayoutParams(0,dp(46),1f));' "$SRC"
-          grep -Fq 'TEST 12 Registration UX + Clean Competition Workspace' "$SRC"
           grep -Fq 'private void showRanking()' "$SRC"
-          if grep -Fq 'Proceed to Judge Scoring   →' "$SRC"; then
-            echo "Proceed arrow still present; refusing TEST 12 build"
-            exit 1
-          fi
-          if grep -Fq 'field(isTeam(c)?"TEAM NAME":"COMPETITOR NAME",name)' "$SRC"; then
-            echo "Duplicate registration field label still present; refusing TEST 12 build"
-            exit 1
-          fi
-          if grep -Fq 'primaryIconButton(d.complete?"Update Result":"Calculate / Update"' "$SRC"; then
-            echo "Old scoring edit-icon button still present; refusing TEST 12 build"
+          if grep -Fq 'Button update=primaryButton(d.complete?"Update Result":"Calculate",BLUE_2);' "$SRC"; then
+            echo "Old automatic Update Result control still present; refusing TEST 13 build"
             exit 1
           fi
           test -s native/app/src/main/res/drawable/ic_home.xml
@@ -107,11 +103,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST12.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST13.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST12
-          path: Bastonero_Calculator_Native_v2.0_TEST12.apk
+          name: Bastonero-Native-APK-TEST13
+          path: Bastonero_Calculator_Native_v2.0_TEST13.apk
           if-no-files-found: error
