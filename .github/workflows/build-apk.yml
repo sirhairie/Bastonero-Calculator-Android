@@ -29,7 +29,7 @@ jobs:
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/brand_logo.png
 
-      - name: Assemble TEST 13 result-lock native source
+      - name: Assemble TEST 14 ranking-board native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -44,41 +44,65 @@ jobs:
           python3 native/test11/patch.py
           python3 native/test12/patch.py
           python3 native/test13/patch.py
+          python3 native/test14/patch.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
             echo "WebView reference found; refusing native build"
             exit 1
           fi
-          grep -Fq 'String[] scores = {"","","","",""};' "$SRC"
+
+          # Preserve TEST 13 official-result locking behavior.
           grep -Fq 'boolean hasLockedResult = false;' "$SRC"
           grep -Fq 'boolean resultLocked = false;' "$SRC"
           grep -Fq 'String[] lockedScores = {"","","","",""};' "$SRC"
           grep -Fq 'private ScoreData lockedScoreData(Entry e)' "$SRC"
           grep -Fq 'private void commitLockedResult(Entry e)' "$SRC"
-          grep -Fq 'ScoreData d=lockedScoreData(e);' "$SRC"
-          grep -Fq 'TextView state=pill(e.resultLocked?"RESULT LOCKED":"EDITING"' "$SRC"
           grep -Fq 'Button action=primaryButton(e.resultLocked?"Update Result":"Calculate",e.resultLocked?RED:BLUE_2);' "$SRC"
-          grep -Fq 'e.resultLocked=false;saveState();refreshAt(e.id);return;' "$SRC"
           grep -Fq 'commitLockedResult(e);saveState();toast("Result calculated and locked")' "$SRC"
-          grep -Fq 'minus.setEnabled(editable);plus.setEnabled(editable)' "$SRC"
-          grep -Fq 'if(e.resultLocked){input.setFocusable(false)' "$SRC"
-          grep -Fq 'j.put("hasLockedResult",e.hasLockedResult);' "$SRC"
-          grep -Fq 'j.put("lockedScores",ls);' "$SRC"
-          grep -Fq 'TEST 13 Result Lock Workflow' "$SRC"
-          grep -Fq 'showPremiumSpinnerPopup' "$SRC"
-          grep -Fq 'Button proceed=primaryButton("Proceed to Judge Scoring",BLUE_2);' "$SRC"
-          grep -Fq 'LinearLayout edit=iconActionButton(R.drawable.ic_edit,GREEN);' "$SRC"
-          grep -Fq 'private void showRanking()' "$SRC"
-          if grep -Fq 'Button update=primaryButton(d.complete?"Update Result":"Calculate",BLUE_2);' "$SRC"; then
-            echo "Old automatic Update Result control still present; refusing TEST 13 build"
+          grep -Fq 'TextView state=pill(e.resultLocked?"RESULT LOCKED":"EDITING"' "$SRC"
+
+          # TEST 14 ranking-board requirements.
+          grep -Fq 'Button ranking=primaryButton("View Ranking",BLUE_2);' "$SRC"
+          grep -Fq 'ranking.setTextSize(15);' "$SRC"
+          grep -Fq 'TextView title=text("RANKING",20,BG,true);' "$SRC"
+          grep -Fq 'title.setBackground(gloss(GOLD_LIGHT,GOLD_2,GOLD,dp(13),GOLD_LIGHT));' "$SRC"
+          grep -Fq 'Button back=primaryButton("Back to Scoring",BLUE_2);' "$SRC"
+          grep -Fq 'Button save=primaryButton("Save Result",RED);' "$SRC"
+          grep -Fq 'identity.addView(text(safeName(r.entry.name),18,WHITE,true));' "$SRC"
+          grep -Fq 'TextView school=text(r.entry.school.isEmpty()?"—":r.entry.school,11,MUTED,false);' "$SRC"
+          grep -Fq 'rankingMetric("VALID SCORE"' "$SRC"
+          grep -Fq 'rankingDetail("REMOVED HIGH"' "$SRC"
+          grep -Fq 'rankingDetail("REMOVED LOW"' "$SRC"
+          grep -Fq 'rankingDetail("5-JUDGE TOTAL"' "$SRC"
+          grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
+          grep -Fq 'top.addView(medal,new LinearLayout.LayoutParams(dp(88),dp(94)));' "$SRC"
+          grep -Fq 'FrameLayout.LayoutParams mp=new FrameLayout.LayoutParams(dp(82),dp(88)' "$SRC"
+          grep -Fq 'TEST 14 Official Ranking Board Redesign' "$SRC"
+
+          if grep -Fq 'View Ranking / Results' "$SRC"; then
+            echo "Old View Ranking / Results label still present; refusing TEST 14 build"
             exit 1
           fi
+          if grep -Fq 'primaryIconButton("Save Result",RED,R.drawable.ic_save)' "$SRC"; then
+            echo "Save Result icon still present; refusing TEST 14 build"
+            exit 1
+          fi
+          if grep -Fq 'outlineIconButton("Back to Scoring",BLUE_2,R.drawable.ic_back)' "$SRC"; then
+            echo "Back to Scoring arrow control still present; refusing TEST 14 build"
+            exit 1
+          fi
+          if grep -Fq 'TextView detail=text(r.detail' "$SRC"; then
+            echo "Ranking explanation paragraph still present; refusing TEST 14 build"
+            exit 1
+          fi
+          if grep -Fq 'RESULTS SUMMARY' "$SRC"; then
+            echo "Old ranking summary prose block still present; refusing TEST 14 build"
+            exit 1
+          fi
+
           test -s native/app/src/main/res/drawable/ic_home.xml
           test -s native/app/src/main/res/drawable/ic_info.xml
-          test -s native/app/src/main/res/drawable/ic_edit.xml
-          test -s native/app/src/main/res/drawable/ic_delete.xml
-          test -s native/app/src/main/res/drawable/ic_add.xml
           test -s native/app/src/main/res/drawable/ic_medal.xml
 
       - name: Set up Java 17
@@ -103,11 +127,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST13.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST14.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST13
-          path: Bastonero_Calculator_Native_v2.0_TEST13.apk
+          name: Bastonero-Native-APK-TEST14
+          path: Bastonero_Calculator_Native_v2.0_TEST14.apk
           if-no-files-found: error
