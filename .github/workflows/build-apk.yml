@@ -29,7 +29,7 @@ jobs:
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/brand_logo.png
 
-      - name: Assemble TEST 16 ranking-score-grid native source
+      - name: Assemble TEST 17 premium-confirmation native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -47,6 +47,7 @@ jobs:
           python3 native/test14/patch.py
           python3 native/test15/patch.py
           python3 native/test16/patch.py
+          python3 native/test17/patch.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -63,51 +64,66 @@ jobs:
           grep -Fq 'Button action=primaryButton(e.resultLocked?"Update Result":"Calculate",e.resultLocked?RED:BLUE_2);' "$SRC"
           grep -Fq 'commitLockedResult(e);saveState();toast("Result calculated and locked")' "$SRC"
 
-          # Preserve clean ranking board and classic medal/header from TEST 14/15.
+          # Preserve TEST 15/16 ranking design and score grid.
           grep -Fq 'Button ranking=primaryButton("View Ranking",BLUE_2);' "$SRC"
           grep -Fq 'TextView title=text("RANKING",20,BG,true);' "$SRC"
-          grep -Fq 'Button back=primaryButton("Back to Scoring",BLUE_2);' "$SRC"
-          grep -Fq 'Button save=primaryButton("Save Result",RED);' "$SRC"
           grep -Fq 'top.addView(medal,new LinearLayout.LayoutParams(dp(82),dp(86)));' "$SRC"
-          grep -Fq 'nameRow.addView(medalBadge,bp);' "$SRC"
           grep -Fq 'ImageView medal=iconView(R.drawable.ic_medal,accent,68);' "$SRC"
-
-          # TEST 16 requested score-table layout.
           grep -Fq 'rankingMetric("REMOVED H&L",fmt1(r.data.high)+" | "+fmt1(r.data.low),WHITE)' "$SRC"
-          grep -Fq 'rankingMetric("VALID SCORE",fmt(r.data.score)' "$SRC"
-          grep -Fq 'rankingMetric("PENALTY",fmt1(r.data.penalty),WHITE)' "$SRC"
-          grep -Fq 'rankingMetric("FINAL SCORE",fmt(r.data.net)' "$SRC"
           grep -Fq 'private View rankingJudgeBox(String label,String value)' "$SRC"
-          grep -Fq 'judges.addView(rankingJudgeBox("J"+(i+1),fmt1(r.data.nums[i])),jp);' "$SRC"
           grep -Fq 'private View rankingTieTotalBox(String value)' "$SRC"
           grep -Fq 'TextView l=text("5-JUDGE TOTAL SCORE",8,GOLD_LIGHT,true);' "$SRC"
-          grep -Fq 'TextView v=text(value,17,GOLD_2,true);' "$SRC"
-          grep -Fq 'elevate(b,9);' "$SRC"
-          grep -Fq 'if(tie){' "$SRC"
           grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
-          grep -Fq 'TEST 16 Ranking Score Grid + Tie Decision Emphasis' "$SRC"
 
-          # The old TEST 15 lower layout must no longer be used by rankCard.
-          if grep -Fq 'technical.addView(rankingDetail("REMOVED HIGH"' "$SRC"; then
-            echo "Old separate Removed High/Low ranking row still present; refusing TEST 16 build"
+          # TEST 17 ranking cleanup.
+          grep -Fq 'if(!repeat){' "$SRC"
+          grep -Fq 'LinearLayout resultActions=row();' "$SRC"
+          grep -Fq 'resultActions.addView(back,new LinearLayout.LayoutParams(0,dp(52),1f));' "$SRC"
+          grep -Fq 'resultActions.addView(save,saveP);' "$SRC"
+
+          # TEST 17 guarded Update Result and Edit Registration.
+          grep -Fq 'premiumConfirm("Update Result","Are you sure you want to update this result?",R.drawable.ic_edit,"No","Yes",GREEN' "$SRC"
+          grep -Fq 'premiumConfirm("Edit Registration","Are you sure you want to edit this registration?",R.drawable.ic_edit,"No","Yes",GREEN' "$SRC"
+
+          # TEST 17 premium destructive confirmations.
+          grep -Fq 'private void premiumConfirm(String title,String message,int iconRes,String negativeLabel,String positiveLabel,int positiveColor,Runnable onConfirm)' "$SRC"
+          grep -Fq 'LinearLayout panel=darkCard(GOLD);' "$SRC"
+          grep -Fq 'negative.setBackground(round(Color.rgb(7,27,48),dp(11),BLUE_2));' "$SRC"
+          grep -Fq 'premiumConfirm("Remove "+entryLabel(c)' "$SRC"
+          grep -Fq 'premiumConfirm("Delete Competition","Delete "+c.meet+" and all scoring data?"' "$SRC"
+          grep -Fq 'TEST 17 Premium Confirmation UX + Ranking Action Cleanup' "$SRC"
+
+          # Reject the old direct unlock and stock destructive AlertDialogs.
+          if grep -Fq 'if(e.resultLocked){e.resultLocked=false;saveState();refreshAt(e.id);return;}' "$SRC"; then
+            echo "Update Result still unlocks without confirmation; refusing TEST 17 build"
             exit 1
           fi
-          if grep -Fq 'technical.addView(rankingDetail("5-JUDGE TOTAL"' "$SRC"; then
-            echo "Old compact 5-Judge Total ranking cell still present; refusing TEST 16 build"
+          if grep -Fq 'setTitle("Remove "+entryLabel(c)).setMessage' "$SRC"; then
+            echo "Stock remove-entry AlertDialog still present; refusing TEST 17 build"
+            exit 1
+          fi
+          if grep -Fq 'setTitle("Delete Competition").setMessage' "$SRC"; then
+            echo "Stock delete-competition AlertDialog still present; refusing TEST 17 build"
+            exit 1
+          fi
+          if grep -Fq 'content.addView(back,new LinearLayout.LayoutParams(-1,dp(52)))' "$SRC"; then
+            echo "Ranking actions are still stacked; refusing TEST 17 build"
             exit 1
           fi
           if grep -Fq 'View Ranking / Results' "$SRC"; then
-            echo "Old ranking button label still present; refusing TEST 16 build"
+            echo "Old ranking button label still present; refusing TEST 17 build"
             exit 1
           fi
           if grep -Fq 'TextView detail=text(r.detail' "$SRC"; then
-            echo "Ranking explanation paragraph returned; refusing TEST 16 build"
+            echo "Ranking explanation paragraph returned; refusing TEST 17 build"
             exit 1
           fi
 
           test -s native/app/src/main/res/drawable/ic_home.xml
           test -s native/app/src/main/res/drawable/ic_info.xml
           test -s native/app/src/main/res/drawable/ic_medal.xml
+          test -s native/app/src/main/res/drawable/ic_edit.xml
+          test -s native/app/src/main/res/drawable/ic_delete.xml
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -131,11 +147,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST16.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST17.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST16
-          path: Bastonero_Calculator_Native_v2.0_TEST16.apk
+          name: Bastonero-Native-APK-TEST17
+          path: Bastonero_Calculator_Native_v2.0_TEST17.apk
           if-no-files-found: error
