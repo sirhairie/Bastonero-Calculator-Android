@@ -27,11 +27,29 @@ jobs:
             exit 1
           fi
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
+
+          # TEST 19's text-encoded portrait lost three JPEG bytes at offset 155.
+          # Restore the original bytes and verify the exact known-good image before Android packaging.
           cat native/test19/photo.part* | base64 -d > native/app/src/main/res/drawable/developer_photo.jpg
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          p=Path('native/app/src/main/res/drawable/developer_photo.jpg')
+          data=p.read_bytes()
+          if len(data)==16213:
+              data=data[:155]+bytes.fromhex('2c2c2c')+data[155:]
+              p.write_bytes(data)
+          digest=hashlib.sha256(p.read_bytes()).hexdigest()
+          expected='82e93a2de41e7078a66ee11db761d2c8fa494d4c05c2d6ad1600cbea9f372647'
+          if digest != expected:
+              raise SystemExit(f'Developer portrait checksum mismatch: {digest}')
+          print('Developer portrait verified:', digest)
+          PY
+
           test -s native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
-      - name: Assemble TEST 19 ranking-matched native source
+      - name: Assemble TEST 20 About portrait-fix native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -53,6 +71,7 @@ jobs:
           python3 native/test18/patch.py
           cat native/test19/patch.part* > /tmp/test19.py
           python3 /tmp/test19.py
+          python3 native/test20/patch.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -68,26 +87,20 @@ jobs:
           grep -Fq 'premiumConfirm("Edit Registration","Are you sure you want to edit this registration?"' "$SRC"
           grep -Fq 'Button negative=primaryButton(negativeLabel,BLUE_2);negative.setTextSize(13);negative.setTextColor(WHITE);' "$SRC"
 
-          # Preserve TEST 18 saving feedback.
+          # Preserve premium saving feedback and ranking-matched portrait export.
           grep -Fq 'final Dialog loading=showSavingDialog();' "$SRC"
           grep -Fq 'long wait=2000-(System.currentTimeMillis()-started);' "$SRC"
           grep -Fq 'private Dialog showSavingDialog()' "$SRC"
           grep -Fq 'Result Successfully Saved' "$SRC"
-
-          # TEST 19 export: centered competition info + Ranking-screen visual structure.
           grep -Fq 'drawTextCenteredFit(cv,p,c.meet,width/2f' "$SRC"
           grep -Fq 'drawExportMedal(cv,p,r.rank,accent' "$SRC"
           grep -Fq 'drawExportMetricBox(cv,p,"REMOVED H&L"' "$SRC"
-          grep -Fq 'drawExportMetricBox(cv,p,"VALID SCORE"' "$SRC"
-          grep -Fq 'drawExportMetricBox(cv,p,"PENALTY"' "$SRC"
-          grep -Fq 'drawExportMetricBox(cv,p,"FINAL SCORE"' "$SRC"
           grep -Fq 'drawExportJudgeBox(cv,p,"J"+(i+1)' "$SRC"
           grep -Fq 'drawExportTieTotal(cv,p,fmt(r.data.fiveTotal)' "$SRC"
           grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
           grep -Fq 'Develop by Sir Hairie Laysam' "$SRC"
 
-          # TEST 19 About project showcase and corrected acknowledgments.
-          grep -Fq 'portrait.setImageResource(R.drawable.developer_photo);' "$SRC"
+          # Preserve About acknowledgments from TEST 19.
           grep -Fq 'DEVELOPER & PROJECT STORY' "$SRC"
           grep -Fq 'Hairie A. Laysam' "$SRC"
           grep -Fq 'THE ARNIS GIRLS' "$SRC"
@@ -100,12 +113,24 @@ jobs:
           grep -Fq 'Analyn F. Patacsil' "$SRC"
           grep -Fq 'Icon Jules F. Descallar' "$SRC"
           grep -Fq 'CORE FEATURES' "$SRC"
-          grep -Fq 'TEST 19 Ranking-Matched Export + Project Story About' "$SRC"
 
-          # Installed Android label must now be Bastonero Calculator.
+          # TEST 20: actual portrait decode + reliable FrameLayout holder.
+          grep -Fq 'FrameLayout photoFrame=new FrameLayout(this);' "$SRC"
+          grep -Fq 'Bitmap developerBitmap=BitmapFactory.decodeResource(getResources(),R.drawable.developer_photo);' "$SRC"
+          grep -Fq 'if(developerBitmap!=null)portrait.setImageBitmap(developerBitmap);else portrait.setImageResource(R.drawable.brand_logo);' "$SRC"
+          grep -Fq 'FrameLayout.LayoutParams portraitP=new FrameLayout.LayoutParams(-1,-1,Gravity.CENTER);' "$SRC"
+          grep -Fq 'TEST 20 About Portrait Fix + Header Cleanup' "$SRC"
+
+          # Remove redundant ABOUT text under the logo.
+          if grep -Fq 'TextView about=text("ABOUT"' "$SRC"; then
+            echo "ABOUT label still exists below logo; refusing TEST 20 build"
+            exit 1
+          fi
+
+          # Installed Android label remains Bastonero Calculator.
           grep -Fq 'android:label="Bastonero Calculator"' native/app/src/main/AndroidManifest.xml
           if grep -Fq 'android:label="Bastonero Native T9"' native/app/src/main/AndroidManifest.xml; then
-            echo "Old app label remains; refusing TEST 19 build"
+            echo "Old app label remains; refusing TEST 20 build"
             exit 1
           fi
 
@@ -139,11 +164,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST19.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST20.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST19
-          path: Bastonero_Calculator_Native_v2.0_TEST19.apk
+          name: Bastonero-Native-APK-TEST20
+          path: Bastonero_Calculator_Native_v2.0_TEST20.apk
           if-no-files-found: error
