@@ -1,0 +1,133 @@
+from pathlib import Path
+
+SRC = Path('native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java')
+s = SRC.read_text(encoding='utf-8')
+
+
+def replace_method(signature, new_body, label):
+    global s
+    start = s.find(signature)
+    if start < 0:
+        raise SystemExit(f'missing method for {label}: {signature}')
+    brace = s.find('{', start)
+    if brace < 0:
+        raise SystemExit(f'missing opening brace for {label}')
+    depth = 0
+    end = None
+    in_string = False
+    in_char = False
+    escape = False
+    for i in range(brace, len(s)):
+        ch = s[i]
+        if in_string:
+            if escape:
+                escape = False
+            elif ch == '\\':
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if in_char:
+            if escape:
+                escape = False
+            elif ch == '\\':
+                escape = True
+            elif ch == "'":
+                in_char = False
+            continue
+        if ch == '"':
+            in_string = True
+            continue
+        if ch == "'":
+            in_char = True
+            continue
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                break
+    if end is None:
+        raise SystemExit(f'unclosed method for {label}')
+    s = s[:start] + new_body.rstrip() + s[end:]
+
+
+# TEST 19 identity. Preserve TEST 18 saving UX, TEST 17 confirmations,
+# TEST 16 ranking score grid, and TEST 13 official result locking.
+s = s.replace('TEST 18', 'TEST 19').replace('bastonero_native_t18', 'bastonero_native_t19')
+s = s.replace('// TEST 19 Premium Save Experience + Portrait Result Export',
+              '// TEST 19 Ranking-Matched Export + Project Story About', 1)
+
+# Developer portrait is restored by the TEST 19 workflow as drawable/developer_photo.jpg.
+
+replace_method('    private void saveResultImage(Competition c,ArrayList<ResultRow> rows){', '''    private void saveResultImage(Competition c,ArrayList<ResultRow> rows){
+        if(rows.isEmpty())return;
+        final Dialog loading=showSavingDialog();
+        final long started=System.currentTimeMillis();
+        new Thread(()->{
+            boolean success=false;
+            String error="Unable to save result";
+            Bitmap bmp=null;
+            try{
+                final int width=1200;
+                final int margin=28;
+                final int headerH=292;
+                final int metaH=176;
+                int cardsH=0;
+                for(ResultRow r:rows){
+                    if("REPEAT PERFORMANCE".equals(r.status))cardsH+=486;
+                    else if(usesTieBreak(r))cardsH+=446;
+                    else cardsH+=378;
+                }
+                final int footerH=116;
+                final int height=margin+headerH+22+metaH+22+cardsH+footerH;
+                bmp=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
+                Canvas cv=new Canvas(bmp);
+                Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
+                cv.drawColor(BG);
+
+                float left=margin,right=width-margin,y=margin;
+
+                p.setColor(NAVY);cv.drawRoundRect(left,y,right,y+headerH,34,34,p);
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(4);p.setColor(GOLD_2);
+                cv.drawRoundRect(left,y,right,y+headerH,34,34,p);p.setStyle(Paint.Style.FILL);
+                Bitmap logo=BitmapFactory.decodeResource(getResources(),R.drawable.brand_logo);
+                if(logo!=null){
+                    Rect src=new Rect(0,0,logo.getWidth(),logo.getHeight());
+                    RectF dst=new RectF(width/2f-72,y+22,width/2f+72,y+166);
+                    cv.drawBitmap(logo,src,dst,p);
+                }
+                drawText(cv,p,"BASTONERO",width/2f,y+216,51,GOLD_LIGHT,true,Paint.Align.CENTER);
+                drawText(cv,p,"C A L C U L A T O R",width/2f,y+255,28,WHITE,true,Paint.Align.CENTER);
+                drawText(cv,p,"Official Tournament Result",width/2f,y+282,19,MUTED,false,Paint.Align.CENTER);
+                y+=headerH+22;
+
+                p.setColor(CARD);cv.drawRoundRect(left,y,right,y+metaH,25,25,p);
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2);p.setColor(LINE);
+                cv.drawRoundRect(left,y,right,y+metaH,25,25,p);p.setStyle(Paint.Style.FILL);
+                drawTextCenteredFit(cv,p,c.meet,width/2f,y+48,34,WHITE,true,1060);
+                String dateVenue=(c.date.isEmpty()?"No date":c.date)+(c.venue.isEmpty()?"":"   •   "+c.venue);
+                drawTextCenteredFit(cv,p,dateVenue,width/2f,y+91,22,TEXT,false,1080);
+                String attributes=c.level+"   •   "+(isTeam(c)?"Team":"Individual")+"   •   "+c.division+"   •   "+c.weapon;
+                drawTextCenteredFit(cv,p,attributes,width/2f,y+139,22,GOLD_2,true,1080);
+                y+=metaH+22;
+
+                for(ResultRow r:rows){
+                    boolean tie=usesTieBreak(r);
+                    boolean repeat="REPEAT PERFORMANCE".equals(r.status);
+                    int accent=medalAccent(r);
+                    int cardH=repeat?466:(tie?426:358);
+                    float cardBottom=y+cardH;
+                    p.setColor(CARD);cv.drawRoundRect(left,y,right,cardBottom,28,28,p);
+                    p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(4);p.setColor(accent);
+                    cv.drawRoundRect(left,y,right,cardBottom,28,28,p);p.setStyle(Paint.Style.FILL);
+
+                    drawExportMedal(cv,p,r.rank,accent,78,y+35,150,150);
+
+                    drawTextFit(cv,p,safeName(r.entry.name),252,y+69,34,WHITE,true,580);
+                    if(!r.entry.school.isEmpty())drawTextFit(cv,p,r.entry.school,252,y+105,20,MUTED,false,580);
+                    if(!repeat){
+                        String medalLabel=shortRemark(r);
+                        float badgeW=Math.max(156,premiumTextWidth(p,medalLabel,18,true)+46);
+         
