@@ -1,0 +1,94 @@
+               float bx=right-badgeW-30,by=y+35;
+                        p.setColor(Color.argb(230,Math.max(18,Color.red(accent)/3),Math.max(18,Color.green(accent)/3),Math.max(18,Color.blue(accent)/3)));
+                        cv.drawRoundRect(bx,by,right-30,by+52,26,26,p);
+                        p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1.6f);p.setColor(accent);
+                        cv.drawRoundRect(bx,by,right-30,by+52,26,26,p);p.setStyle(Paint.Style.FILL);
+                        drawText(cv,p,medalLabel,(bx+right-30)/2f,by+34,18,WHITE,true,Paint.Align.CENTER);
+                    }
+
+                    p.setColor(LINE_SOFT);cv.drawRect(left+28,y+147,right-28,y+149,p);
+
+                    float boxY=y+170;
+                    float innerLeft=left+28, innerRight=right-28;
+                    float gap=10;
+                    float boxW=(innerRight-innerLeft-gap*3)/4f;
+                    drawExportMetricBox(cv,p,"REMOVED H&L",fmt1(r.data.high)+" | "+fmt1(r.data.low),innerLeft,boxY,boxW,82,WHITE,false);
+                    drawExportMetricBox(cv,p,"VALID SCORE",fmt(r.data.score),innerLeft+(boxW+gap),boxY,boxW,82,accent,true);
+                    drawExportMetricBox(cv,p,"PENALTY",fmt1(r.data.penalty),innerLeft+2*(boxW+gap),boxY,boxW,82,WHITE,false);
+                    drawExportMetricBox(cv,p,"FINAL SCORE",fmt(r.data.net),innerLeft+3*(boxW+gap),boxY,boxW,82,accent,true);
+
+                    float judgeY=boxY+101;
+                    if(!tie){
+                        float jw=(innerRight-innerLeft-gap*4)/5f;
+                        for(int i=0;i<5;i++)drawExportJudgeBox(cv,p,"J"+(i+1),fmt1(r.data.nums[i]),innerLeft+i*(jw+gap),judgeY,jw,72);
+                    }else{
+                        float totalW=330;
+                        float jw=(innerRight-innerLeft-totalW-gap*5)/5f;
+                        for(int i=0;i<5;i++)drawExportJudgeBox(cv,p,"J"+(i+1),fmt1(r.data.nums[i]),innerLeft+i*(jw+gap),judgeY,jw,72);
+                        float totalX=innerLeft+5*(jw+gap);
+                        drawExportTieTotal(cv,p,fmt(r.data.fiveTotal),totalX,judgeY,totalW,72);
+                    }
+
+                    if(tie && !repeat){
+                        float tieBarY=judgeY+90;
+                        p.setColor(Color.rgb(58,48,22));cv.drawRoundRect(innerLeft,tieBarY,innerRight,tieBarY+42,12,12,p);
+                        p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1.7f);p.setColor(GOLD_2);
+                        cv.drawRoundRect(innerLeft,tieBarY,innerRight,tieBarY+42,12,12,p);p.setStyle(Paint.Style.FILL);
+                        String label="TIE-BREAK WINNER".equals(r.status)?"TIE-BREAK WINNER":"TIE-BREAK APPLIED";
+                        drawText(cv,p,label,width/2f,tieBarY+28,16,GOLD_LIGHT,true,Paint.Align.CENTER);
+                    }
+
+                    if(repeat){
+                        float repeatY=judgeY+92;
+                        p.setColor(RED);cv.drawRoundRect(innerLeft,repeatY,innerRight,repeatY+48,13,13,p);
+                        drawText(cv,p,"REPEAT PERFORMANCE REQUIRED",width/2f,repeatY+32,17,WHITE,true,Paint.Align.CENTER);
+                    }
+
+                    y=cardBottom+20;
+                }
+
+                float badgeW=620,badgeH=58,bx=(width-badgeW)/2f,by=height-88;
+                p.setColor(Color.rgb(65,46,10));cv.drawRoundRect(bx,by,bx+badgeW,by+badgeH,29,29,p);
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.5f);p.setColor(GOLD_2);
+                cv.drawRoundRect(bx,by,bx+badgeW,by+badgeH,29,29,p);p.setStyle(Paint.Style.FILL);
+                drawText(cv,p,"Develop by Sir Hairie Laysam",width/2f,by+38,21,GOLD_LIGHT,true,Paint.Align.CENTER);
+
+                String file="Bastonero_Result_"+System.currentTimeMillis()+".png";
+                if(Build.VERSION.SDK_INT>=29){
+                    ContentValues values=new ContentValues();
+                    values.put(MediaStore.Images.Media.DISPLAY_NAME,file);
+                    values.put(MediaStore.Images.Media.MIME_TYPE,"image/png");
+                    values.put(MediaStore.Images.Media.RELATIVE_PATH,"Pictures/Bastonero");
+                    Uri uri=getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,values);
+                    if(uri==null)throw new Exception("Could not create image");
+                    try(OutputStream out=getContentResolver().openOutputStream(uri)){
+                        if(out==null||!bmp.compress(Bitmap.CompressFormat.PNG,100,out))throw new Exception("Could not write image");
+                    }
+                }else{
+                    java.io.File dir=new java.io.File(getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES),"Bastonero");
+                    if(!dir.exists()&&!dir.mkdirs())throw new Exception("Could not create Pictures/Bastonero");
+                    java.io.File f=new java.io.File(dir,file);
+                    try(OutputStream out=new java.io.FileOutputStream(f)){
+                        if(!bmp.compress(Bitmap.CompressFormat.PNG,100,out))throw new Exception("Could not write image");
+                    }
+                }
+                success=true;
+            }catch(Exception ex){
+                error=ex.getMessage()==null?"Unable to save result":ex.getMessage();
+            }finally{
+                if(bmp!=null)bmp.recycle();
+            }
+
+            long wait=2000-(System.currentTimeMillis()-started);
+            if(wait>0)try{Thread.sleep(wait);}catch(Exception ignored){}
+            final boolean ok=success;
+            final String err=error;
+            runOnUiThread(()->{
+                if(loading.isShowing())loading.dismiss();
+                if(ok)showSavedDialog();
+                else premiumConfirm("Save Failed","Unable to save the result image. "+err,R.drawable.ic_info,"Close","Try Again",RED,()->saveResultImage(c,rows));
+            });
+        }).start();
+    }
+
+    private void drawExportMedal(Canvas cv,Paint p,int rank,int accent,float x,float y,float w,float h){
