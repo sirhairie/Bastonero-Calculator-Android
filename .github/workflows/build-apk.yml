@@ -28,7 +28,6 @@ jobs:
           fi
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
 
-          # Restore and verify the known-good developer portrait.
           cat native/test19/photo.part* | base64 -d > native/app/src/main/res/drawable/developer_photo.jpg
           python3 - <<'PY'
           from pathlib import Path
@@ -48,7 +47,7 @@ jobs:
           test -s native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
-      - name: Assemble TEST 22 About native source
+      - name: Assemble TEST 23 About native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -73,6 +72,8 @@ jobs:
           python3 native/test20/patch.py
           python3 native/test21/patch.py
           python3 native/test22/patch.py
+          python3 native/test23/patch.py
+
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -80,68 +81,56 @@ jobs:
             exit 1
           fi
 
-          # Preserve official result locking and existing confirmations.
+          # Preserve scoring, official result locking, confirmations and export.
           grep -Fq 'boolean hasLockedResult = false;' "$SRC"
           grep -Fq 'private ScoreData lockedScoreData(Entry e)' "$SRC"
           grep -Fq 'private void commitLockedResult(Entry e)' "$SRC"
           grep -Fq 'premiumConfirm("Update Result","Are you sure you want to update this result?"' "$SRC"
           grep -Fq 'premiumConfirm("Edit Registration","Are you sure you want to edit this registration?"' "$SRC"
-          grep -Fq 'Button negative=primaryButton(negativeLabel,BLUE_2);negative.setTextSize(13);negative.setTextColor(WHITE);' "$SRC"
-
-          # Preserve premium saving feedback and ranking-matched portrait export.
           grep -Fq 'final Dialog loading=showSavingDialog();' "$SRC"
-          grep -Fq 'long wait=2000-(System.currentTimeMillis()-started);' "$SRC"
-          grep -Fq 'private Dialog showSavingDialog()' "$SRC"
           grep -Fq 'Result Successfully Saved' "$SRC"
-          grep -Fq 'drawTextCenteredFit(cv,p,c.meet,width/2f' "$SRC"
           grep -Fq 'drawExportMedal(cv,p,r.rank,accent' "$SRC"
-          grep -Fq 'drawExportMetricBox(cv,p,"REMOVED H&L"' "$SRC"
-          grep -Fq 'drawExportJudgeBox(cv,p,"J"+(i+1)' "$SRC"
           grep -Fq 'drawExportTieTotal(cv,p,fmt(r.data.fiveTotal)' "$SRC"
           grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
           grep -Fq 'Develop by Sir Hairie Laysam' "$SRC"
 
-          # Preserve About sections and working developer photo decode.
-          grep -Fq 'Hairie A. Laysam' "$SRC"
-          grep -Fq 'THE ARNIS GIRLS' "$SRC"
-          grep -Fq 'CORE FEATURES' "$SRC"
-          grep -Fq 'Bitmap developerBitmap=BitmapFactory.decodeResource(getResources(),R.drawable.developer_photo);' "$SRC"
-          grep -Fq 'LinearLayout storyPanel=aboutSection("PROJECT STORY",R.drawable.ic_info);' "$SRC"
-          grep -Fq 'TextView purposeLabel=text("PURPOSE",10,GOLD_2,true);' "$SRC"
-
-          # TEST 22 Developer Information: circular portrait and centered identity below it.
-          grep -Fq 'TextView devHead=text("DEVELOPER INFORMATION",13,GOLD_LIGHT,true);' "$SRC"
-          grep -Fq 'photoFrame.setBackground(round(Color.rgb(10,32,55),dp(999),GOLD_2));photoFrame.setClipToOutline(true);' "$SRC"
-          grep -Fq 'LinearLayout.LayoutParams photoP=new LinearLayout.LayoutParams(dp(154),dp(154));' "$SRC"
-          grep -Fq 'TextView devName=text("Hairie A. Laysam",20,WHITE,true);devName.setGravity(Gravity.CENTER);' "$SRC"
-          grep -Fq 'TextView role=text("Teacher I",12,GOLD_2,true);role.setGravity(Gravity.CENTER);' "$SRC"
-          grep -Fq 'TextView school=text("Sta. Maria National High School",11,MUTED,false);school.setGravity(Gravity.CENTER);' "$SRC"
-
-          # TEST 22 revised origin story.
+          # Preserve TEST 22 About content.
+          grep -Fq 'DEVELOPER INFORMATION' "$SRC"
           grep -Fq 'directly assigned by the school principal to serve as coach of the Arnis Girls' "$SRC"
-          grep -Fq 'he had no prior knowledge of Arnis, its competition rules and regulations, or its scoring system' "$SRC"
           grep -Fq 'Icon Jules F. Descallar suggested creating an application' "$SRC"
           grep -Fq 'Mara W. Samson, one of the Arnis Girls, supported the idea' "$SRC"
-          grep -Fq 'served as its tester and scoring validator' "$SRC"
-
-          # TEST 22 Chaperon / fellow-coach acknowledgment and people icon for tester.
-          grep -Fq 'TextView coachName=text("Leonila M. Umpad",16,WHITE,true);' "$SRC"
-          grep -Fq 'TextView coachRole=text("Fellow Coach - Arnis Boys",10,GOLD_2,true);' "$SRC"
-          grep -Fq 'With appreciation for their support and assistance to the Arnis Girls during their activities and competitions.' "$SRC"
           grep -Fq 'LinearLayout tester=aboutSection("APP TESTER & SCORING VALIDATION",R.drawable.ic_group);' "$SRC"
-          grep -Fq 'TEST 22 Developer Information + Circular Portrait + Revised Story' "$SRC"
+          grep -Fq 'THE ARNIS GIRLS' "$SRC"
+          grep -Fq 'CORE FEATURES' "$SRC"
 
-          # Reject obsolete About layout/text.
-          if grep -Fq 'DEVELOPER & PROJECT STORY' "$SRC"; then
-            echo "Old developer heading remains; refusing TEST 22 build"
+          # TEST 23: true circular portrait with head-safe top-anchored crop and gold overlay ring.
+          grep -Fq 'photoOval.setShape(android.graphics.drawable.GradientDrawable.OVAL)' "$SRC"
+          grep -Fq 'Bitmap safePortrait=Bitmap.createBitmap(developerBitmap,cropX,0,side,side);' "$SRC"
+          grep -Fq 'portraitRing.setShape(android.graphics.drawable.GradientDrawable.OVAL)' "$SRC"
+          grep -Fq 'portraitRing.setStroke(dp(3),GOLD_2);' "$SRC"
+          grep -Fq 'photoFrame.setForeground(portraitRing);' "$SRC"
+          grep -Fq 'LinearLayout.LayoutParams photoP=new LinearLayout.LayoutParams(dp(158),dp(158));' "$SRC"
+
+          # TEST 23: cleaner combined support panel.
+          grep -Fq 'aboutSection("CHAPERON & COACHING SUPPORT",R.drawable.ic_group)' "$SRC"
+          grep -Fq 'TextView chapName=text("Analyn F. Patacsil",15,WHITE,true);' "$SRC"
+          grep -Fq 'TextView coachName=text("Leonila M. Umpad",15,WHITE,true);' "$SRC"
+          grep -Fq 'Fellow Coach - Arnis Boys' "$SRC"
+          grep -Fq 'WITH APPRECIATION' "$SRC"
+          grep -Fq 'For their support and assistance to the Arnis Girls during activities and competitions.' "$SRC"
+          grep -Fq 'TEST 23 Perfect Circular Portrait + Coaching Support Layout' "$SRC"
+
+          # Reject TEST 22's imperfect portrait and old panel heading.
+          if grep -Fq 'portraitP.setMargins(dp(5),dp(5),dp(5),dp(5))' "$SRC"; then
+            echo "Old inset-square portrait remains; refusing TEST 23 build"
             exit 1
           fi
-          if grep -Fq 'LinearLayout tester=aboutSection("APP TESTER & SCORING VALIDATION",R.drawable.ic_check);' "$SRC"; then
-            echo "Old tester check icon remains; refusing TEST 22 build"
+          if grep -Fq 'aboutSection("CHAPERON",R.drawable.ic_group)' "$SRC"; then
+            echo "Old Chaperon-only heading remains; refusing TEST 23 build"
             exit 1
           fi
           if grep -Fq 'TextView about=text("ABOUT"' "$SRC"; then
-            echo "ABOUT label returned; refusing TEST 22 build"
+            echo "ABOUT label returned; refusing TEST 23 build"
             exit 1
           fi
 
@@ -170,11 +159,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST22.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST23.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST22
-          path: Bastonero_Calculator_Native_v2.0_TEST22.apk
+          name: Bastonero-Native-APK-TEST23
+          path: Bastonero_Calculator_Native_v2.0_TEST23.apk
           if-no-files-found: error
