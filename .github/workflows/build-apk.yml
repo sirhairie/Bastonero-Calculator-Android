@@ -47,7 +47,7 @@ jobs:
           test -s native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
-      - name: Assemble TEST 23 About native source
+      - name: Assemble TEST 24 portrait-result native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -73,6 +73,7 @@ jobs:
           python3 native/test21/patch.py
           python3 native/test22/patch.py
           python3 native/test23/patch.py
+          python3 native/test24/patch.py
 
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
@@ -81,60 +82,71 @@ jobs:
             exit 1
           fi
 
-          # Preserve scoring, official result locking, confirmations and export.
+          # Preserve scoring, official result locking, confirmations and premium save flow.
           grep -Fq 'boolean hasLockedResult = false;' "$SRC"
           grep -Fq 'private ScoreData lockedScoreData(Entry e)' "$SRC"
           grep -Fq 'private void commitLockedResult(Entry e)' "$SRC"
           grep -Fq 'premiumConfirm("Update Result","Are you sure you want to update this result?"' "$SRC"
           grep -Fq 'premiumConfirm("Edit Registration","Are you sure you want to edit this registration?"' "$SRC"
           grep -Fq 'final Dialog loading=showSavingDialog();' "$SRC"
+          grep -Fq 'long wait=2000-(System.currentTimeMillis()-started);' "$SRC"
           grep -Fq 'Result Successfully Saved' "$SRC"
-          grep -Fq 'drawExportMedal(cv,p,r.rank,accent' "$SRC"
-          grep -Fq 'drawExportTieTotal(cv,p,fmt(r.data.fiveTotal)' "$SRC"
-          grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
-          grep -Fq 'Develop by Sir Hairie Laysam' "$SRC"
 
-          # Preserve TEST 22 About content.
+          # Preserve TEST 23 About page exactly.
           grep -Fq 'DEVELOPER INFORMATION' "$SRC"
-          grep -Fq 'directly assigned by the school principal to serve as coach of the Arnis Girls' "$SRC"
-          grep -Fq 'Icon Jules F. Descallar suggested creating an application' "$SRC"
-          grep -Fq 'Mara W. Samson, one of the Arnis Girls, supported the idea' "$SRC"
-          grep -Fq 'LinearLayout tester=aboutSection("APP TESTER & SCORING VALIDATION",R.drawable.ic_group);' "$SRC"
-          grep -Fq 'THE ARNIS GIRLS' "$SRC"
-          grep -Fq 'CORE FEATURES' "$SRC"
-
-          # TEST 23: true circular portrait with head-safe top-anchored crop and gold overlay ring.
           grep -Fq 'photoOval.setShape(android.graphics.drawable.GradientDrawable.OVAL)' "$SRC"
           grep -Fq 'Bitmap safePortrait=Bitmap.createBitmap(developerBitmap,cropX,0,side,side);' "$SRC"
-          grep -Fq 'portraitRing.setShape(android.graphics.drawable.GradientDrawable.OVAL)' "$SRC"
           grep -Fq 'portraitRing.setStroke(dp(3),GOLD_2);' "$SRC"
-          grep -Fq 'photoFrame.setForeground(portraitRing);' "$SRC"
-          grep -Fq 'LinearLayout.LayoutParams photoP=new LinearLayout.LayoutParams(dp(158),dp(158));' "$SRC"
-
-          # TEST 23: cleaner combined support panel.
           grep -Fq 'aboutSection("CHAPERON & COACHING SUPPORT",R.drawable.ic_group)' "$SRC"
           grep -Fq 'TextView chapName=text("Analyn F. Patacsil",15,WHITE,true);' "$SRC"
           grep -Fq 'TextView coachName=text("Leonila M. Umpad",15,WHITE,true);' "$SRC"
-          grep -Fq 'Fellow Coach - Arnis Boys' "$SRC"
           grep -Fq 'WITH APPRECIATION' "$SRC"
-          grep -Fq 'For their support and assistance to the Arnis Girls during activities and competitions.' "$SRC"
-          grep -Fq 'TEST 23 Perfect Circular Portrait + Coaching Support Layout' "$SRC"
+          grep -Fq 'directly assigned by the school principal to serve as coach of the Arnis Girls' "$SRC"
+          grep -Fq 'Icon Jules F. Descallar suggested creating an application' "$SRC"
+          grep -Fq 'Mara W. Samson, one of the Arnis Girls, supported the idea' "$SRC"
+          grep -Fq 'THE ARNIS GIRLS' "$SRC"
+          grep -Fq 'CORE FEATURES' "$SRC"
 
-          # Reject TEST 22's imperfect portrait and old panel heading.
-          if grep -Fq 'portraitP.setMargins(dp(5),dp(5),dp(5),dp(5))' "$SRC"; then
-            echo "Old inset-square portrait remains; refusing TEST 23 build"
+          # TEST 24: portrait-first saved-result redesign.
+          grep -Fq 'final int width=1080;' "$SRC"
+          grep -Fq 'drawTextCenteredFit(cv,p,"Bastonero Calculator",width/2f,y+201,50,GOLD_LIGHT,true,940);' "$SRC"
+          grep -Fq 'drawTextCenteredFit(cv,p,"Official Tournament Result",width/2f,y+252,34,WHITE,true,940);' "$SRC"
+          grep -Fq 'if(repeat)drawExportTieBadge(cv,p,left+38,y+26,138,138);' "$SRC"
+          grep -Fq 'float dividerY=y+184;' "$SRC"
+          grep -Fq 'float metricW=(innerRight-innerLeft-gap)/2f;' "$SRC"
+          grep -Fq 'float judgeY=y+424;' "$SRC"
+          grep -Fq 'drawExportTieTotal(cv,p,fmt(r.data.fiveTotal),innerLeft,totalY,innerRight-innerLeft,84);' "$SRC"
+          grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
+          grep -Fq 'private void drawExportTieBadge(Canvas cv,Paint p,float x,float y,float w,float h)' "$SRC"
+          grep -Fq 'Path leftRibbon=new Path();' "$SRC"
+          grep -Fq 'Develop by Sir Hairie Laysam' "$SRC"
+          grep -Fq 'TEST 24 Portrait Saved Result Redesign' "$SRC"
+
+          # Reject the old wide/split export header and fragile drawable medal implementation.
+          if grep -Fq 'final int width=1200;' "$SRC"; then
+            echo "Old 1200px export layout remains; refusing TEST 24 build"
             exit 1
           fi
-          if grep -Fq 'aboutSection("CHAPERON",R.drawable.ic_group)' "$SRC"; then
-            echo "Old Chaperon-only heading remains; refusing TEST 23 build"
+          if grep -Fq 'drawText(cv,p,"BASTONERO",width/2f' "$SRC"; then
+            echo "Old split BASTONERO header remains; refusing TEST 24 build"
+            exit 1
+          fi
+          if grep -Fq 'drawText(cv,p,"C A L C U L A T O R",width/2f' "$SRC"; then
+            echo "Old split CALCULATOR header remains; refusing TEST 24 build"
+            exit 1
+          fi
+          if grep -Fq 'Drawable medal=getDrawable(R.drawable.ic_medal);' "$SRC"; then
+            echo "Fragile drawable export medal remains; refusing TEST 24 build"
             exit 1
           fi
           if grep -Fq 'TextView about=text("ABOUT"' "$SRC"; then
-            echo "ABOUT label returned; refusing TEST 23 build"
+            echo "ABOUT label returned; refusing TEST 24 build"
             exit 1
           fi
 
           grep -Fq 'android:label="Bastonero Calculator"' native/app/src/main/AndroidManifest.xml
+          grep -Fq "applicationId 'com.bastonero.calculator.nativeapp.test24'" native/app/build.gradle
+          grep -Fq "versionCode 20024" native/app/build.gradle
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
       - name: Set up Java 17
@@ -159,11 +171,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST23.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST24.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST23
-          path: Bastonero_Calculator_Native_v2.0_TEST23.apk
+          name: Bastonero-Native-APK-TEST24
+          path: Bastonero_Calculator_Native_v2.0_TEST24.apk
           if-no-files-found: error
