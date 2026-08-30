@@ -1,0 +1,67 @@
+ checking five judges' scores, identifying the highest and lowest scores, calculating the valid score, applying penalties, determining rankings, and resolving ties can become difficult when accurate results are needed quickly.\\n\\nThe project began as a simple scoring concept and gradually evolved into a dedicated native Android application through repeated development, real testing, corrections, redesigns, and feedback. It combines Arnis coaching experience, practical problem-solving, technology, and continuous improvement.",11,TEXT,false);
+        story.setPadding(0,dp(14),0,0);dev.addView(story);
+        page.addView(dev,fullMargins(0,0,0,dp(12)));
+
+        LinearLayout girls=aboutSection("THE ARNIS GIRLS",R.drawable.ic_group);
+        girls.addView(text("Their training, discipline, competition experience, and journey helped inspire the practical development of Bastonero Calculator.",10,MUTED,false));
+        String[] athletes={"Frances Jewel M. Rejano","Monira S. Sali","Hannah K. Laysam","Maha W. Samson","Mara W. Samson","Radzma H. Tahirulla"};
+        for(String athlete:athletes)girls.addView(aboutBullet(athlete));
+        page.addView(girls,fullMargins(0,0,0,dp(12)));
+
+        LinearLayout chap=aboutSection("CHAPERON",R.drawable.ic_person);
+        TextView chapName=text("Analyn F. Patacsil",16,WHITE,true);chapName.setPadding(0,dp(7),0,0);chap.addView(chapName);
+        TextView chapBody=text("With appreciation for her support and assistance to the Arnis Girls during their activities and competitions.",10,MUTED,false);
+        chapBody.setPadding(0,dp(5),0,0);chap.addView(chapBody);page.addView(chap,fullMargins(0,0,0,dp(12)));
+
+        LinearLayout tester=aboutSection("APP TESTER & SCORING VALIDATION",R.drawable.ic_check);
+        TextView testerName=text("Icon Jules F. Descallar",16,WHITE,true);testerName.setPadding(0,dp(7),0,0);tester.addView(testerName);
+        TextView testerBody=text("Provided feedback during development, tested scoring computation and ranking behavior, helped validate correct Arnis Anyo score computation, and contributed observations on workflow, stability, performance, and usability.",10,MUTED,false);
+        testerBody.setPadding(0,dp(5),0,0);tester.addView(testerBody);page.addView(tester,fullMargins(0,0,0,dp(12)));
+
+        LinearLayout features=aboutSection("CORE FEATURES",R.drawable.ic_trophy);
+        String[] featureNames={"Five-Judge Scoring","Highest & Lowest Removal","Valid Score Calculation","Penalty Deduction","Result Locking","Ranking & Medal Results","5-Judge Total Tie-Breaking","Repeat Performance Detection","Competition Management","Competitor / Team Management","Saved Tournament Results"};
+        for(String f:featureNames)features.addView(aboutBullet(f));
+        page.addView(features,fullMargins(0,0,0,dp(12)));
+
+        TextView motto=text("For Arnis. For the Athletes. For Better Competition Scoring.",11,GOLD_LIGHT,true);
+        motto.setGravity(Gravity.CENTER);motto.setPadding(dp(10),dp(12),dp(10),dp(12));
+        motto.setBackground(round(Color.rgb(56,42,11),dp(999),GOLD_2));page.addView(motto);
+
+        Button close=primaryButton("Close",BLUE_2);close.setOnClickListener(v->d.dismiss());
+        page.addView(close,fullMargins(0,dp(14),0,0,dp(48)));
+
+        ScrollView sv=new ScrollView(this);sv.setFillViewport(true);sv.setBackgroundColor(BG);
+        sv.addView(page,new ScrollView.LayoutParams(-1,-2));
+        d.setContentView(sv);d.show();
+        Window w=d.getWindow();
+        if(w!=null){
+            w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams lp=w.getAttributes();lp.dimAmount=.88f;w.setAttributes(lp);
+            int ww=(int)(getResources().getDisplayMetrics().widthPixels*.94f);
+            int hh=(int)(getResources().getDisplayMetrics().heightPixels*.92f);
+            w.setLayout(ww,hh);
+        }
+    }
+
+    private LinearLayout aboutSection(String title,int iconRes){
+        LinearLayout card=darkCard(GOLD);
+        LinearLayout head=row();head.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout iconPlate=new LinearLayout(this);iconPlate.setGravity(Gravity.CENTER);
+        iconPlate.setBackground(gloss(Color.rgb(34,56,76),Color.rgb(8,31,57),Color.rgb(3,18,35),dp(999),GOLD));
+        iconPlate.addView(iconView(iconRes,GOLD_2,25),new LinearLayout.LayoutParams(dp(25),dp(25)));
+        head.addView(iconPlate,new LinearLayout.LayoutParams(dp(44),dp(44)));
+        TextView t=text(title,13,GOLD_LIGHT,true);t.setPadding(dp(10),0,0,0);head.addView(t,new LinearLayout.LayoutParams(0,-2,1f));
+        card.addView(head);
+        View div=divider();LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(1));p.setMargins(0,dp(8),0,dp(7));card.addView(div,p);
+        return card;
+    }
+
+    private View aboutBullet(String value){
+        LinearLayout r=row();r.setGravity(Gravity.CENTER_VERTICAL);r.setPadding(dp(2),dp(5),0,0);
+        TextView dot=text("•",17,GOLD_2,true);r.addView(dot,new LinearLayout.LayoutParams(dp(22),-2));
+        r.addView(text(value,11,TEXT,false),new LinearLayout.LayoutParams(0,-2,1f));return r;
+    }''', 'TEST 19 About project showcase')
+
+SRC.write_text(s,encoding='utf-8')
+print('TEST 19 ranking-matched export and About project showcase applied')
