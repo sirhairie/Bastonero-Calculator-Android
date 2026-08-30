@@ -48,7 +48,7 @@ jobs:
           test -s native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
-      - name: Assemble TEST 21 developer-story native source
+      - name: Assemble TEST 22 About native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -72,6 +72,7 @@ jobs:
           python3 /tmp/test19.py
           python3 native/test20/patch.py
           python3 native/test21/patch.py
+          python3 native/test22/patch.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -100,31 +101,47 @@ jobs:
           grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
           grep -Fq 'Develop by Sir Hairie Laysam' "$SRC"
 
-          # Preserve About acknowledgments and working portrait decode.
+          # Preserve About sections and working developer photo decode.
           grep -Fq 'Hairie A. Laysam' "$SRC"
           grep -Fq 'THE ARNIS GIRLS' "$SRC"
-          grep -Fq 'Analyn F. Patacsil' "$SRC"
-          grep -Fq 'Icon Jules F. Descallar' "$SRC"
           grep -Fq 'CORE FEATURES' "$SRC"
           grep -Fq 'Bitmap developerBitmap=BitmapFactory.decodeResource(getResources(),R.drawable.developer_photo);' "$SRC"
-
-          # TEST 21: clean developer profile + separate premium Project Story panel.
-          grep -Fq 'photoFrame.setBackground(round(Color.rgb(10,32,55),dp(18),GOLD_2));photoFrame.setClipToOutline(true);' "$SRC"
-          grep -Fq 'portraitP.setMargins(dp(4),dp(4),dp(4),dp(4));' "$SRC"
           grep -Fq 'LinearLayout storyPanel=aboutSection("PROJECT STORY",R.drawable.ic_info);' "$SRC"
           grep -Fq 'TextView purposeLabel=text("PURPOSE",10,GOLD_2,true);' "$SRC"
-          grep -Fq 'Created to make Arnis Anyo scoring faster, clearer, and more reliable during competitions.' "$SRC"
-          grep -Fq 'Features such as Result Locking, Five-Judge Total Tie-Breaking, Repeat Performance Detection' "$SRC"
-          grep -Fq 'to provide a dependable and easy-to-use scoring companion for Arnis Anyo competitions.' "$SRC"
-          grep -Fq 'TEST 21 Developer Profile + Project Story Panel' "$SRC"
 
-          # Purpose must no longer float beside the developer identity.
-          if grep -Fq 'purpose.setPadding(0,dp(10),0,0);identity.addView(purpose);' "$SRC"; then
-            echo "Purpose still floats beside developer profile; refusing TEST 21 build"
+          # TEST 22 Developer Information: circular portrait and centered identity below it.
+          grep -Fq 'TextView devHead=text("DEVELOPER INFORMATION",13,GOLD_LIGHT,true);' "$SRC"
+          grep -Fq 'photoFrame.setBackground(round(Color.rgb(10,32,55),dp(999),GOLD_2));photoFrame.setClipToOutline(true);' "$SRC"
+          grep -Fq 'LinearLayout.LayoutParams photoP=new LinearLayout.LayoutParams(dp(154),dp(154));' "$SRC"
+          grep -Fq 'TextView devName=text("Hairie A. Laysam",20,WHITE,true);devName.setGravity(Gravity.CENTER);' "$SRC"
+          grep -Fq 'TextView role=text("Teacher I",12,GOLD_2,true);role.setGravity(Gravity.CENTER);' "$SRC"
+          grep -Fq 'TextView school=text("Sta. Maria National High School",11,MUTED,false);school.setGravity(Gravity.CENTER);' "$SRC"
+
+          # TEST 22 revised origin story.
+          grep -Fq 'directly assigned by the school principal to serve as coach of the Arnis Girls' "$SRC"
+          grep -Fq 'he had no prior knowledge of Arnis, its competition rules and regulations, or its scoring system' "$SRC"
+          grep -Fq 'Icon Jules F. Descallar suggested creating an application' "$SRC"
+          grep -Fq 'Mara W. Samson, one of the Arnis Girls, supported the idea' "$SRC"
+          grep -Fq 'served as its tester and scoring validator' "$SRC"
+
+          # TEST 22 Chaperon / fellow-coach acknowledgment and people icon for tester.
+          grep -Fq 'TextView coachName=text("Leonila M. Umpad",16,WHITE,true);' "$SRC"
+          grep -Fq 'TextView coachRole=text("Fellow Coach - Arnis Boys",10,GOLD_2,true);' "$SRC"
+          grep -Fq 'With appreciation for their support and assistance to the Arnis Girls during their activities and competitions.' "$SRC"
+          grep -Fq 'LinearLayout tester=aboutSection("APP TESTER & SCORING VALIDATION",R.drawable.ic_group);' "$SRC"
+          grep -Fq 'TEST 22 Developer Information + Circular Portrait + Revised Story' "$SRC"
+
+          # Reject obsolete About layout/text.
+          if grep -Fq 'DEVELOPER & PROJECT STORY' "$SRC"; then
+            echo "Old developer heading remains; refusing TEST 22 build"
+            exit 1
+          fi
+          if grep -Fq 'LinearLayout tester=aboutSection("APP TESTER & SCORING VALIDATION",R.drawable.ic_check);' "$SRC"; then
+            echo "Old tester check icon remains; refusing TEST 22 build"
             exit 1
           fi
           if grep -Fq 'TextView about=text("ABOUT"' "$SRC"; then
-            echo "ABOUT label returned; refusing TEST 21 build"
+            echo "ABOUT label returned; refusing TEST 22 build"
             exit 1
           fi
 
@@ -153,11 +170,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST21.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST22.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST21
-          path: Bastonero_Calculator_Native_v2.0_TEST21.apk
+          name: Bastonero-Native-APK-TEST22
+          path: Bastonero_Calculator_Native_v2.0_TEST22.apk
           if-no-files-found: error
