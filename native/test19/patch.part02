@@ -1,0 +1,89 @@
+
+        try{
+            Drawable medal=getDrawable(R.drawable.ic_medal);
+            if(medal!=null){
+                medal=medal.mutate();
+                medal.setTint(accent);
+                medal.setBounds((int)x,(int)y,(int)(x+w),(int)(y+h));
+                medal.draw(cv);
+            }
+        }catch(Exception ignored){}
+        float cx=x+w/2f,cy=y+h*.58f;
+        p.setColor(Color.argb(220,255,232,164));cv.drawCircle(cx,cy,31,p);
+        p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2);p.setColor(GOLD_LIGHT);cv.drawCircle(cx,cy,31,p);p.setStyle(Paint.Style.FILL);
+        drawText(cv,p,String.valueOf(rank),cx,cy+11,29,Color.BLACK,true,Paint.Align.CENTER);
+    }
+
+    private void drawExportMetricBox(Canvas cv,Paint p,String label,String value,float x,float y,float w,float h,int accent,boolean emphasize){
+        p.setColor(Color.rgb(10,45,78));cv.drawRoundRect(x,y,x+w,y+h,15,15,p);
+        p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(emphasize?2.2f:1.4f);p.setColor(emphasize?accent:LINE);
+        cv.drawRoundRect(x,y,x+w,y+h,15,15,p);p.setStyle(Paint.Style.FILL);
+        drawText(cv,p,label,x+w/2f,y+27,14,MUTED,true,Paint.Align.CENTER);
+        drawText(cv,p,value,x+w/2f,y+61,emphasize?27:25,emphasize?accent:WHITE,true,Paint.Align.CENTER);
+    }
+
+    private void drawExportJudgeBox(Canvas cv,Paint p,String label,String value,float x,float y,float w,float h){
+        p.setColor(Color.rgb(7,29,53));cv.drawRoundRect(x,y,x+w,y+h,13,13,p);
+        p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1.3f);p.setColor(LINE);
+        cv.drawRoundRect(x,y,x+w,y+h,13,13,p);p.setStyle(Paint.Style.FILL);
+        drawText(cv,p,label,x+w/2f,y+25,14,MUTED,true,Paint.Align.CENTER);
+        drawText(cv,p,value,x+w/2f,y+55,23,WHITE,true,Paint.Align.CENTER);
+    }
+
+    private void drawExportTieTotal(Canvas cv,Paint p,String value,float x,float y,float w,float h){
+        p.setShadowLayer(14,0,0,Color.argb(150,255,199,65));
+        p.setColor(Color.rgb(65,52,18));cv.drawRoundRect(x,y,x+w,y+h,14,14,p);
+        p.clearShadowLayer();
+        p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.4f);p.setColor(GOLD_LIGHT);
+        cv.drawRoundRect(x,y,x+w,y+h,14,14,p);p.setStyle(Paint.Style.FILL);
+        drawText(cv,p,"5-JUDGE TOTAL SCORE",x+w/2f,y+25,13,GOLD_LIGHT,true,Paint.Align.CENTER);
+        drawText(cv,p,value,x+w/2f,y+57,26,GOLD_2,true,Paint.Align.CENTER);
+    }
+
+    private float premiumTextWidth(Paint p,String value,float size,boolean bold){
+        p.setTypeface(bold?Typeface.DEFAULT_BOLD:Typeface.DEFAULT);p.setTextSize(size);return p.measureText(value);
+    }
+
+    private void drawTextCenteredFit(Canvas cv,Paint p,String value,float x,float y,float startSize,int color,boolean bold,float maxWidth){
+        float size=startSize;
+        p.setTypeface(bold?Typeface.DEFAULT_BOLD:Typeface.DEFAULT);
+        p.setTextAlign(Paint.Align.CENTER);p.setTextSize(size);
+        while(size>15&&p.measureText(value)>maxWidth){size-=1.5f;p.setTextSize(size);}
+        drawText(cv,p,value,x,y,size,color,bold,Paint.Align.CENTER);
+    }''', 'TEST 19 ranking-matched portrait result export')
+
+replace_method('    private void showAbout(){', '''    private void showAbout(){
+        final Dialog d=new Dialog(this);
+        d.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);
+        page.setPadding(dp(14),dp(14),dp(14),dp(20));page.setBackgroundColor(BG);
+
+        LinearLayout hero=darkCard(GOLD);hero.setGravity(Gravity.CENTER);
+        ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.brand_logo);logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        hero.addView(logo,new LinearLayout.LayoutParams(dp(82),dp(82)));
+        TextView about=text("ABOUT",12,GOLD_LIGHT,true);about.setGravity(Gravity.CENTER);about.setPadding(0,dp(4),0,0);hero.addView(about);
+        TextView title=text("Bastonero Calculator",24,WHITE,true);title.setGravity(Gravity.CENTER);hero.addView(title);
+        TextView sub=text("Arnis Anyo Scoring and Ranking System",11,MUTED,false);sub.setGravity(Gravity.CENTER);sub.setPadding(0,dp(4),0,0);hero.addView(sub);
+        page.addView(hero,fullMargins(0,0,0,dp(12)));
+
+        LinearLayout dev=darkCard(GOLD);
+        TextView devHead=text("DEVELOPER & PROJECT STORY",13,GOLD_LIGHT,true);devHead.setGravity(Gravity.CENTER);dev.addView(devHead);
+
+        LinearLayout profile=row();profile.setGravity(Gravity.CENTER_VERTICAL);profile.setPadding(0,dp(12),0,0);
+        LinearLayout photoFrame=new LinearLayout(this);photoFrame.setPadding(dp(3),dp(3),dp(3),dp(3));
+        photoFrame.setBackground(gloss(Color.rgb(64,48,13),Color.rgb(23,38,53),Color.rgb(5,20,38),dp(18),GOLD_2));elevate(photoFrame,8);
+        ImageView portrait=new ImageView(this);portrait.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        portrait.setImageResource(R.drawable.developer_photo);
+        photoFrame.addView(portrait,new LinearLayout.LayoutParams(-1,-1));
+        profile.addView(photoFrame,new LinearLayout.LayoutParams(dp(118),dp(154)));
+
+        LinearLayout identity=new LinearLayout(this);identity.setOrientation(LinearLayout.VERTICAL);identity.setPadding(dp(13),0,0,0);
+        identity.addView(text("Hairie A. Laysam",20,WHITE,true));
+        TextView role=text("Teacher I",12,GOLD_2,true);role.setPadding(0,dp(4),0,0);identity.addView(role);
+        TextView school=text("Sta. Maria National High School",11,MUTED,false);school.setPadding(0,dp(3),0,0);identity.addView(school);
+        TextView purpose=text("Created to make Arnis Anyo scoring faster, clearer, and more reliable during competitions.",11,TEXT,false);
+        purpose.setPadding(0,dp(10),0,0);identity.addView(purpose);
+        profile.addView(identity,new LinearLayout.LayoutParams(0,-2,1f));dev.addView(profile);
+
+        TextView story=text("Bastonero Calculator grew from actual experiences in coaching and handling Arnis Anyo competitions. During competition, manually
