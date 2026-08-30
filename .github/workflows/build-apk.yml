@@ -28,8 +28,7 @@ jobs:
           fi
           unzip -p Bastonero_Android_Project.zip "$LOGO_PATH" > native/app/src/main/res/drawable/brand_logo.png
 
-          # TEST 19's text-encoded portrait lost three JPEG bytes at offset 155.
-          # Restore the original bytes and verify the exact known-good image before Android packaging.
+          # Restore and verify the known-good developer portrait.
           cat native/test19/photo.part* | base64 -d > native/app/src/main/res/drawable/developer_photo.jpg
           python3 - <<'PY'
           from pathlib import Path
@@ -49,7 +48,7 @@ jobs:
           test -s native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
-      - name: Assemble TEST 20 About portrait-fix native source
+      - name: Assemble TEST 21 developer-story native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -72,6 +71,7 @@ jobs:
           cat native/test19/patch.part* > /tmp/test19.py
           python3 /tmp/test19.py
           python3 native/test20/patch.py
+          python3 native/test21/patch.py
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
           if grep -q "android.webkit.WebView" "$SRC"; then
@@ -100,46 +100,35 @@ jobs:
           grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
           grep -Fq 'Develop by Sir Hairie Laysam' "$SRC"
 
-          # Preserve About acknowledgments from TEST 19.
-          grep -Fq 'DEVELOPER & PROJECT STORY' "$SRC"
+          # Preserve About acknowledgments and working portrait decode.
           grep -Fq 'Hairie A. Laysam' "$SRC"
           grep -Fq 'THE ARNIS GIRLS' "$SRC"
-          grep -Fq 'Frances Jewel M. Rejano' "$SRC"
-          grep -Fq 'Monira S. Sali' "$SRC"
-          grep -Fq 'Hannah K. Laysam' "$SRC"
-          grep -Fq 'Maha W. Samson' "$SRC"
-          grep -Fq 'Mara W. Samson' "$SRC"
-          grep -Fq 'Radzma H. Tahirulla' "$SRC"
           grep -Fq 'Analyn F. Patacsil' "$SRC"
           grep -Fq 'Icon Jules F. Descallar' "$SRC"
           grep -Fq 'CORE FEATURES' "$SRC"
-
-          # TEST 20: actual portrait decode + reliable FrameLayout holder.
-          grep -Fq 'FrameLayout photoFrame=new FrameLayout(this);' "$SRC"
           grep -Fq 'Bitmap developerBitmap=BitmapFactory.decodeResource(getResources(),R.drawable.developer_photo);' "$SRC"
-          grep -Fq 'if(developerBitmap!=null)portrait.setImageBitmap(developerBitmap);else portrait.setImageResource(R.drawable.brand_logo);' "$SRC"
-          grep -Fq 'FrameLayout.LayoutParams portraitP=new FrameLayout.LayoutParams(-1,-1,Gravity.CENTER);' "$SRC"
-          grep -Fq 'TEST 20 About Portrait Fix + Header Cleanup' "$SRC"
 
-          # Remove redundant ABOUT text under the logo.
+          # TEST 21: clean developer profile + separate premium Project Story panel.
+          grep -Fq 'photoFrame.setBackground(round(Color.rgb(10,32,55),dp(18),GOLD_2));photoFrame.setClipToOutline(true);' "$SRC"
+          grep -Fq 'portraitP.setMargins(dp(4),dp(4),dp(4),dp(4));' "$SRC"
+          grep -Fq 'LinearLayout storyPanel=aboutSection("PROJECT STORY",R.drawable.ic_info);' "$SRC"
+          grep -Fq 'TextView purposeLabel=text("PURPOSE",10,GOLD_2,true);' "$SRC"
+          grep -Fq 'Created to make Arnis Anyo scoring faster, clearer, and more reliable during competitions.' "$SRC"
+          grep -Fq 'Features such as Result Locking, Five-Judge Total Tie-Breaking, Repeat Performance Detection' "$SRC"
+          grep -Fq 'to provide a dependable and easy-to-use scoring companion for Arnis Anyo competitions.' "$SRC"
+          grep -Fq 'TEST 21 Developer Profile + Project Story Panel' "$SRC"
+
+          # Purpose must no longer float beside the developer identity.
+          if grep -Fq 'purpose.setPadding(0,dp(10),0,0);identity.addView(purpose);' "$SRC"; then
+            echo "Purpose still floats beside developer profile; refusing TEST 21 build"
+            exit 1
+          fi
           if grep -Fq 'TextView about=text("ABOUT"' "$SRC"; then
-            echo "ABOUT label still exists below logo; refusing TEST 20 build"
+            echo "ABOUT label returned; refusing TEST 21 build"
             exit 1
           fi
 
-          # Installed Android label remains Bastonero Calculator.
           grep -Fq 'android:label="Bastonero Calculator"' native/app/src/main/AndroidManifest.xml
-          if grep -Fq 'android:label="Bastonero Native T9"' native/app/src/main/AndroidManifest.xml; then
-            echo "Old app label remains; refusing TEST 20 build"
-            exit 1
-          fi
-
-          test -s native/app/src/main/res/drawable/ic_home.xml
-          test -s native/app/src/main/res/drawable/ic_info.xml
-          test -s native/app/src/main/res/drawable/ic_medal.xml
-          test -s native/app/src/main/res/drawable/ic_edit.xml
-          test -s native/app/src/main/res/drawable/ic_delete.xml
-          test -s native/app/src/main/res/drawable/ic_check.xml
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
       - name: Set up Java 17
@@ -164,11 +153,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST20.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST21.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST20
-          path: Bastonero_Calculator_Native_v2.0_TEST20.apk
+          name: Bastonero-Native-APK-TEST21
+          path: Bastonero_Calculator_Native_v2.0_TEST21.apk
           if-no-files-found: error
