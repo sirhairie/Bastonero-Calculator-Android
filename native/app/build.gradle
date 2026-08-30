@@ -7,11 +7,11 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.bastonero.calculator.nativeapp.test15'
+        applicationId 'com.bastonero.calculator.nativeapp.test16'
         minSdk 23
         targetSdk 35
-        versionCode 20015
-        versionName '2.0-native-test15'
+        versionCode 20016
+        versionName '2.0-native-test16'
     }
 
     buildTypes {
