@@ -47,7 +47,7 @@ jobs:
           test -s native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
-      - name: Assemble TEST 24 portrait-result native source
+      - name: Assemble TEST 25 HD result native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -74,6 +74,7 @@ jobs:
           python3 native/test22/patch.py
           python3 native/test23/patch.py
           python3 native/test24/patch.py
+          python3 native/test25/patch.py
 
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
@@ -92,7 +93,7 @@ jobs:
           grep -Fq 'long wait=2000-(System.currentTimeMillis()-started);' "$SRC"
           grep -Fq 'Result Successfully Saved' "$SRC"
 
-          # Preserve TEST 23 About page exactly.
+          # Preserve TEST 23 About page.
           grep -Fq 'DEVELOPER INFORMATION' "$SRC"
           grep -Fq 'photoOval.setShape(android.graphics.drawable.GradientDrawable.OVAL)' "$SRC"
           grep -Fq 'Bitmap safePortrait=Bitmap.createBitmap(developerBitmap,cropX,0,side,side);' "$SRC"
@@ -101,52 +102,45 @@ jobs:
           grep -Fq 'TextView chapName=text("Analyn F. Patacsil",15,WHITE,true);' "$SRC"
           grep -Fq 'TextView coachName=text("Leonila M. Umpad",15,WHITE,true);' "$SRC"
           grep -Fq 'WITH APPRECIATION' "$SRC"
-          grep -Fq 'directly assigned by the school principal to serve as coach of the Arnis Girls' "$SRC"
-          grep -Fq 'Icon Jules F. Descallar suggested creating an application' "$SRC"
-          grep -Fq 'Mara W. Samson, one of the Arnis Girls, supported the idea' "$SRC"
           grep -Fq 'THE ARNIS GIRLS' "$SRC"
           grep -Fq 'CORE FEATURES' "$SRC"
 
-          # TEST 24: portrait-first saved-result redesign.
+          # Preserve approved TEST 24 portrait result layout.
           grep -Fq 'final int width=1080;' "$SRC"
           grep -Fq 'drawTextCenteredFit(cv,p,"Bastonero Calculator",width/2f,y+201,50,GOLD_LIGHT,true,940);' "$SRC"
           grep -Fq 'drawTextCenteredFit(cv,p,"Official Tournament Result",width/2f,y+252,34,WHITE,true,940);' "$SRC"
-          grep -Fq 'if(repeat)drawExportTieBadge(cv,p,left+38,y+26,138,138);' "$SRC"
-          grep -Fq 'float dividerY=y+184;' "$SRC"
           grep -Fq 'float metricW=(innerRight-innerLeft-gap)/2f;' "$SRC"
           grep -Fq 'float judgeY=y+424;' "$SRC"
-          grep -Fq 'drawExportTieTotal(cv,p,fmt(r.data.fiveTotal),innerLeft,totalY,innerRight-innerLeft,84);' "$SRC"
           grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
-          grep -Fq 'private void drawExportTieBadge(Canvas cv,Paint p,float x,float y,float w,float h)' "$SRC"
-          grep -Fq 'Path leftRibbon=new Path();' "$SRC"
           grep -Fq 'Develop by Sir Hairie Laysam' "$SRC"
-          grep -Fq 'TEST 24 Portrait Saved Result Redesign' "$SRC"
 
-          # Reject the old wide/split export header and fragile drawable medal implementation.
-          if grep -Fq 'final int width=1200;' "$SRC"; then
-            echo "Old 1200px export layout remains; refusing TEST 24 build"
-            exit 1
-          fi
-          if grep -Fq 'drawText(cv,p,"BASTONERO",width/2f' "$SRC"; then
-            echo "Old split BASTONERO header remains; refusing TEST 24 build"
-            exit 1
-          fi
-          if grep -Fq 'drawText(cv,p,"C A L C U L A T O R",width/2f' "$SRC"; then
-            echo "Old split CALCULATOR header remains; refusing TEST 24 build"
-            exit 1
-          fi
-          if grep -Fq 'Drawable medal=getDrawable(R.drawable.ic_medal);' "$SRC"; then
-            echo "Fragile drawable export medal remains; refusing TEST 24 build"
+          # TEST 25: 2X HD export and ranking-matched medal resource/proportions.
+          grep -Fq 'final int exportScale=2;' "$SRC"
+          grep -Fq 'Bitmap.createBitmap(width*exportScale,height*exportScale,Bitmap.Config.ARGB_8888)' "$SRC"
+          grep -Fq 'cv.scale(exportScale,exportScale);' "$SRC"
+          grep -Fq 'float unit=Math.min(w/82f,h/86f);' "$SRC"
+          grep -Fq 'float iconSize=68f*unit;' "$SRC"
+          grep -Fq 'float glowR=26f*unit;' "$SRC"
+          grep -Fq 'float coinR=17f*unit;' "$SRC"
+          grep -Fq 'Drawable medal=getDrawable(R.drawable.ic_medal);' "$SRC"
+          grep -Fq 'medal.setTint(accent);' "$SRC"
+          grep -Fq 'drawText(cv,p,String.valueOf(rank),cx,medalCy+6f*unit,16f*unit,BG,true,Paint.Align.CENTER);' "$SRC"
+          grep -Fq 'TEST 25 Ranking-Matched Medal + 2X HD Result Export' "$SRC"
+
+          # Reject TEST 24's hand-built ribbon medal.
+          if grep -Fq 'Path leftRibbon=new Path();' "$SRC"; then
+            echo "Old TEST 24 ribbon medal remains; refusing TEST 25 build"
             exit 1
           fi
           if grep -Fq 'TextView about=text("ABOUT"' "$SRC"; then
-            echo "ABOUT label returned; refusing TEST 24 build"
+            echo "ABOUT label returned; refusing TEST 25 build"
             exit 1
           fi
 
           grep -Fq 'android:label="Bastonero Calculator"' native/app/src/main/AndroidManifest.xml
-          grep -Fq "applicationId 'com.bastonero.calculator.nativeapp.test24'" native/app/build.gradle
-          grep -Fq "versionCode 20024" native/app/build.gradle
+          grep -Fq "applicationId 'com.bastonero.calculator.nativeapp.test25'" native/app/build.gradle
+          grep -Fq "versionCode 20025" native/app/build.gradle
+          grep -Fq "versionName '2.0-native-test25'" native/app/build.gradle
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
       - name: Set up Java 17
@@ -171,11 +165,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST24.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST25.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST24
-          path: Bastonero_Calculator_Native_v2.0_TEST24.apk
+          name: Bastonero-Native-APK-TEST25
+          path: Bastonero_Calculator_Native_v2.0_TEST25.apk
           if-no-files-found: error
