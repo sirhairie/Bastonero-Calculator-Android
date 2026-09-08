@@ -47,7 +47,7 @@ jobs:
           test -s native/app/src/main/res/drawable/brand_logo.png
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
-      - name: Assemble TEST 25 HD result native source
+      - name: Assemble TEST 26 tie-break native source
         run: |
           mkdir -p native/app/src/main/java/com/bastonero/calculator/nativeapp
           cat native/test4/MainActivity.part* > native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
@@ -75,6 +75,7 @@ jobs:
           python3 native/test23/patch.py
           python3 native/test24/patch.py
           python3 native/test25/patch.py
+          python3 native/test26/patch.py
 
           SRC=native/app/src/main/java/com/bastonero/calculator/nativeapp/MainActivity.java
           test -s "$SRC"
@@ -83,7 +84,7 @@ jobs:
             exit 1
           fi
 
-          # Preserve scoring, official result locking, confirmations and premium save flow.
+          # Preserve official result locking, confirmations and premium save flow.
           grep -Fq 'boolean hasLockedResult = false;' "$SRC"
           grep -Fq 'private ScoreData lockedScoreData(Entry e)' "$SRC"
           grep -Fq 'private void commitLockedResult(Entry e)' "$SRC"
@@ -105,42 +106,43 @@ jobs:
           grep -Fq 'THE ARNIS GIRLS' "$SRC"
           grep -Fq 'CORE FEATURES' "$SRC"
 
-          # Preserve approved TEST 24 portrait result layout.
+          # Preserve approved TEST 24 portrait result layout and TEST 25 HD/medal upgrade.
           grep -Fq 'final int width=1080;' "$SRC"
           grep -Fq 'drawTextCenteredFit(cv,p,"Bastonero Calculator",width/2f,y+201,50,GOLD_LIGHT,true,940);' "$SRC"
           grep -Fq 'drawTextCenteredFit(cv,p,"Official Tournament Result",width/2f,y+252,34,WHITE,true,940);' "$SRC"
-          grep -Fq 'float metricW=(innerRight-innerLeft-gap)/2f;' "$SRC"
-          grep -Fq 'float judgeY=y+424;' "$SRC"
-          grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
-          grep -Fq 'Develop by Sir Hairie Laysam' "$SRC"
-
-          # TEST 25: 2X HD export and ranking-matched medal resource/proportions.
           grep -Fq 'final int exportScale=2;' "$SRC"
           grep -Fq 'Bitmap.createBitmap(width*exportScale,height*exportScale,Bitmap.Config.ARGB_8888)' "$SRC"
           grep -Fq 'cv.scale(exportScale,exportScale);' "$SRC"
-          grep -Fq 'float unit=Math.min(w/82f,h/86f);' "$SRC"
-          grep -Fq 'float iconSize=68f*unit;' "$SRC"
-          grep -Fq 'float glowR=26f*unit;' "$SRC"
-          grep -Fq 'float coinR=17f*unit;' "$SRC"
           grep -Fq 'Drawable medal=getDrawable(R.drawable.ic_medal);' "$SRC"
           grep -Fq 'medal.setTint(accent);' "$SRC"
-          grep -Fq 'drawText(cv,p,String.valueOf(rank),cx,medalCy+6f*unit,16f*unit,BG,true,Paint.Align.CENTER);' "$SRC"
-          grep -Fq 'TEST 25 Ranking-Matched Medal + 2X HD Result Export' "$SRC"
+          grep -Fq 'REPEAT PERFORMANCE REQUIRED' "$SRC"
+          grep -Fq 'Develop by Sir Hairie Laysam' "$SRC"
 
-          # Reject TEST 24's hand-built ribbon medal.
-          if grep -Fq 'Path leftRibbon=new Path();' "$SRC"; then
-            echo "Old TEST 24 ribbon medal remains; refusing TEST 25 build"
+          # TEST 26: rank Final Scores using normalized hundredths, then 5-Judge Total.
+          grep -Fq 'long aNet=Math.round(a.data.net*100.0);' "$SRC"
+          grep -Fq 'long bNet=Math.round(b.data.net*100.0);' "$SRC"
+          grep -Fq 'int byFinal=Long.compare(bNet,aNet);' "$SRC"
+          grep -Fq 'long aFive=Math.round(a.data.fiveTotal*100.0);' "$SRC"
+          grep -Fq 'return Long.compare(bFive,aFive);' "$SRC"
+          grep -Fq 'long xNet=Math.round(x.data.net*100.0);' "$SRC"
+          grep -Fq 'long xFive=Math.round(x.data.fiveTotal*100.0);' "$SRC"
+          grep -Fq 'if(sameFinal>1&&xFive==highestFive)' "$SRC"
+          grep -Fq 'TEST 26 Tie-Break Ranking Precision Fix' "$SRC"
+
+          # Reject the raw-double ordering that caused 28.60 vs 28.60 to sort incorrectly.
+          if grep -Fq 'Double.compare(b.data.net,a.data.net)' "$SRC"; then
+            echo "Raw floating-point Final Score comparator remains; refusing TEST 26 build"
             exit 1
           fi
           if grep -Fq 'TextView about=text("ABOUT"' "$SRC"; then
-            echo "ABOUT label returned; refusing TEST 25 build"
+            echo "ABOUT label returned; refusing TEST 26 build"
             exit 1
           fi
 
           grep -Fq 'android:label="Bastonero Calculator"' native/app/src/main/AndroidManifest.xml
-          grep -Fq "applicationId 'com.bastonero.calculator.nativeapp.test25'" native/app/build.gradle
-          grep -Fq "versionCode 20025" native/app/build.gradle
-          grep -Fq "versionName '2.0-native-test25'" native/app/build.gradle
+          grep -Fq "applicationId 'com.bastonero.calculator.nativeapp.test26'" native/app/build.gradle
+          grep -Fq "versionCode 20026" native/app/build.gradle
+          grep -Fq "versionName '2.0-native-test26'" native/app/build.gradle
           test -s native/app/src/main/res/drawable/developer_photo.jpg
 
       - name: Set up Java 17
@@ -165,11 +167,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST25.apk
+        run: cp native/app/build/outputs/apk/debug/app-debug.apk Bastonero_Calculator_Native_v2.0_TEST26.apk
 
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bastonero-Native-APK-TEST25
-          path: Bastonero_Calculator_Native_v2.0_TEST25.apk
+          name: Bastonero-Native-APK-TEST26
+          path: Bastonero_Calculator_Native_v2.0_TEST26.apk
           if-no-files-found: error
