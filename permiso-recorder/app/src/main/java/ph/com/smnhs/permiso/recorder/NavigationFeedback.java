@@ -69,21 +69,21 @@ final class NavigationFeedback {
               'display:flex;justify-content:center;align-items:center;' +
               'background:rgba(6,25,46,.55);pointer-events:none;';
             var box=document.createElement('div');
-            box.style.cssText='min-width:192px;max-width:85vw;background:#fff;' +
+            box.style.cssText='min-width:192px;max-width:85vw;background:linear-gradient(135deg,#082544 0%,#123E6B 100%);' +
               'border-radius:18px;padding:25px 24px;text-align:center;' +
-              'box-shadow:0 12px 30px rgba(0,0,0,.20);' +
-              'font:600 16px system-ui,sans-serif;color:#17324A';
+              'box-shadow:0 14px 36px rgba(0,0,0,.30);border:1px solid rgba(212,175,55,.35);' +
+              'font:600 16px system-ui,sans-serif;color:#FFFFFF';
             var circle=document.createElement('div');
             circle.style.cssText='height:42px;width:42px;' +
-              'border:4px solid #DAE9EE;border-top-color:#23B9A8;' +
+              'border:4px solid rgba(255,255,255,.22);border-top-color:#E0B84C;' +
               'border-radius:50%;animation:permiso-spin-v15 .8s linear infinite;' +
               'margin:0 auto 14px';
             var heading=document.createElement('div');
-            heading.textContent=signout ? 'Signing out…' : 'Loading page…';
+            heading.textContent=signout ? 'Signing out…' : 'Loading...';
             var sub=document.createElement('div');
             sub.textContent='Please wait a moment';
             sub.style.cssText='font:400 13px system-ui,sans-serif;' +
-              'color:#637789;margin-top:5px';
+              'color:#F3DB9B;margin-top:5px';
             box.appendChild(circle);box.appendChild(heading);box.appendChild(sub);
             overlay.appendChild(box);document.body.appendChild(overlay);
             begin=Date.now();

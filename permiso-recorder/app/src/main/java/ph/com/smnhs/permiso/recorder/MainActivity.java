@@ -97,7 +97,7 @@ public final class MainActivity extends Activity {
         errorPanel = findViewById(R.id.errorPanel);
         mainContainer = findViewById(R.id.mainContainer);
         swipeRefresh = findViewById(R.id.swipeRefresh);
-        swipeRefresh.setColorSchemeResources(R.color.teal, R.color.navy);
+        swipeRefresh.setColorSchemeResources(R.color.loading_gold);
         swipeRefresh.setProgressBackgroundColorSchemeResource(R.color.cloud);
         swipeRefresh.setOnChildScrollUpCallback((parent, child) ->
                 cameraStreamActive || webView.getScrollY() > 0);
