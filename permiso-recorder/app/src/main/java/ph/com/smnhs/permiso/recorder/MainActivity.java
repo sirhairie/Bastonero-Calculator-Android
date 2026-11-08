@@ -245,6 +245,11 @@ public final class MainActivity extends Activity {
                 loadingBar.setProgress(100);
                 loadingBar.setVisibility(View.GONE);
                 swipeRefresh.setRefreshing(false);
+                // Some PERMISO tabs update in-page without WebView navigation;
+                // install a safe, UI-only spinner for Scanner/Records/DTR clicks.
+                if (isTrustedUrl(Uri.parse(url))) {
+                    webView.evaluateJavascript(NavigationFeedback.script(), null);
+                }
                 if (autoLoginInProgress) {
                     autoLoginInProgress = false;
                     hideLoading();
