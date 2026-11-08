@@ -10,7 +10,7 @@
         android:fullBackupContent="false"
         android:usesCleartextTraffic="false"
         android:label="PERMISO Recorder"
-        android:icon="@drawable/brand_mark"
+        android:icon="@drawable/recorder_logo"
         android:theme="@style/Theme.PermisoRecorder"
         android:supportsRtl="true">
         <activity android:name=".SettingsActivity"

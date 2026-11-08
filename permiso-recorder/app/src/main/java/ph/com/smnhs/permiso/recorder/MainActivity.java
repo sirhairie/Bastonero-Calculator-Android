@@ -79,10 +79,8 @@ public final class MainActivity extends Activity {
                 startActivityForResult(new Intent(this, SettingsActivity.class),
                         SETTINGS_REQUEST_CODE));
         ImageButton reload = findViewById(R.id.reloadButton);
-        ImageButton browser = findViewById(R.id.browserButton);
         reload.setOnClickListener(v -> retry());
         findViewById(R.id.retryButton).setOnClickListener(v -> retry());
-        browser.setOnClickListener(v -> openExternal(Uri.parse(LOGIN_URL)));
         configureWebView();
         if (savedInstanceState != null && webView.restoreState(savedInstanceState) != null) {
             // Retain the scanner page across screen rotations.
@@ -325,31 +323,41 @@ public final class MainActivity extends Activity {
 
     private void submitSavedLogin(CredentialVault.SavedLogin login, int retryCount) {
         if (!isExactLoginPage(webView.getUrl())) return;
+        // Check URL in Java and again inside the page: avoid brittle regex escaping.
+        // Never send saved credentials to any other domain or page.
         String js = "(function(){"
-                + "if(!/^[\\\\/]permiso[\\\\/]scanner-login\\\\.php$/.test(location.pathname))return 'wrong-page';"
-                + "var pass=document.querySelector('input[type=password]');"
-                + "var form=pass&&pass.form;"
-                + "if(!form)return 'waiting';"
+                + "if(location.protocol!=='https:' || "
+                + "(location.hostname!=='www.smnhs.com' && location.hostname!=='smnhs.com') || "
+                + "location.pathname!=='/permiso/scanner-login.php')return 'wrong-page';"
+                + "var fields=Array.prototype.slice.call(document.querySelectorAll('input'));"
+                + "var pass=fields.find(function(e){return e.type==='password' && !e.disabled;});"
+                + "var form=pass && (pass.form || pass.closest('form'));"
+                + "if(!pass || !form)return 'waiting';"
                 + "var user=form.querySelector('input[name=username],input[id=username],"
-                + "input[autocomplete=username],input[type=text],input[type=email]');"
-                + "if(!user)return 'waiting';"
+                + "input[autocomplete=username],input[name=user],input[id=user],"
+                + "input[name=login],input[type=text],input[type=email]');"
+                + "if(!user){user=Array.prototype.slice.call(form.querySelectorAll('input')).find("
+                + "function(e){return !e.disabled && !e.readOnly && !['hidden','password','checkbox',"
+                + "'radio','submit','button','file'].includes(e.type);});}"
+                + "if(!user || !pass.isConnected || !user.isConnected)return 'waiting';"
                 + "var setValue=function(input,val){"
                 + "var desc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');"
-                + "if(desc&&desc.set)desc.set.call(input,val);else input.value=val;"
+                + "if(desc && desc.set)desc.set.call(input,val);else input.value=val;"
                 + "input.dispatchEvent(new Event('input',{bubbles:true}));"
                 + "input.dispatchEvent(new Event('change',{bubbles:true}));"
                 + "};"
                 + "setValue(user," + JSONObject.quote(login.username) + ");"
                 + "setValue(pass," + JSONObject.quote(login.password) + ");"
-                + "var button=form.querySelector('button[type=submit],input[type=submit],button');"
-                + "if(button)button.click();"
-                + "else if(form.requestSubmit)form.requestSubmit();else form.submit();"
+                + "var button=form.querySelector('button[type=submit],input[type=submit],button:not([type=button])');"
+                + "if(button){button.click();}"
+                + "else if(form.requestSubmit){form.requestSubmit();}"
+                + "else{form.submit();}"
                 + "return 'submitted';"
                 + "})();";
         webView.evaluateJavascript(js, result -> {
-            if ("\"waiting\"".equals(result) && retryCount < 4 &&
+            if ("\"waiting\"".equals(result) && retryCount < 12 &&
                     isExactLoginPage(webView.getUrl())) {
-                webView.postDelayed(() -> submitSavedLogin(login, retryCount + 1), 350);
+                webView.postDelayed(() -> submitSavedLogin(login, retryCount + 1), 450);
             } else if ("\"waiting\"".equals(result)) {
                 Toast.makeText(this,
                         "Auto-login could not locate the login form. Sign in manually.",
