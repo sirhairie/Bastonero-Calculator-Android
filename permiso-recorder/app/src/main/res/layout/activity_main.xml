@@ -72,6 +72,54 @@
             android:textSize="15sp" />
     </LinearLayout>
 
+    <!-- A native loading popup appears during sign-in and page changes. -->
+    <FrameLayout
+        android:id="@+id/loadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:background="#85061930"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="PERMISO is loading">
+        <LinearLayout
+            android:layout_width="268dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:elevation="12dp"
+            android:background="@drawable/loading_popup_background">
+            <ProgressBar
+                android:id="@+id/loadingSpinner"
+                style="?android:attr/progressBarStyle"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/teal"/>
+            <TextView
+                android:id="@+id/loadingHeading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="17dp"
+                android:gravity="center"
+                android:text="@string/loading_page"
+                android:textColor="@color/ink"
+                android:fontFamily="sans-serif-medium"
+                android:textSize="18sp"/>
+            <TextView
+                android:id="@+id/loadingDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:gravity="center"
+                android:text="@string/loading_wait"
+                android:textColor="@color/subtle"
+                android:textSize="13sp"/>
+        </LinearLayout>
+    </FrameLayout>
+
     <!-- Drag to reposition if it obscures a scanner control. Tap for Settings. -->
     <ImageButton
         android:id="@+id/settingsButton"

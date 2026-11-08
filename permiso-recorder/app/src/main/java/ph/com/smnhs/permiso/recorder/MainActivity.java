@@ -13,6 +13,9 @@ import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.widget.TextView;
 import android.graphics.Color;
 import org.json.JSONObject;
 import android.os.Environment;
@@ -54,6 +57,13 @@ public final class MainActivity extends Activity {
     private FrameLayout mainContainer;
     private boolean cameraStreamActive = false;
     private ProgressBar loadingBar;
+    private View loadingOverlay;
+    private TextView loadingHeading;
+    private TextView loadingDescription;
+    private final Handler overlayHandler = new Handler(Looper.getMainLooper());
+    private Runnable overlayTimeout;
+    private boolean autoLoginInProgress = false;
+    private static final long LOADING_TIMEOUT_MS = 14000L;
     private LinearLayout errorPanel;
     private PermissionRequest pendingCameraPermission;
     private ValueCallback<Uri[]> pendingFileChooser;
@@ -81,6 +91,9 @@ public final class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         webView = findViewById(R.id.recorderWebView);
         loadingBar = findViewById(R.id.loadingBar);
+        loadingOverlay = findViewById(R.id.loadingOverlay);
+        loadingHeading = findViewById(R.id.loadingHeading);
+        loadingDescription = findViewById(R.id.loadingDescription);
         errorPanel = findViewById(R.id.errorPanel);
         mainContainer = findViewById(R.id.mainContainer);
         swipeRefresh = findViewById(R.id.swipeRefresh);
@@ -156,6 +169,36 @@ public final class MainActivity extends Activity {
         });
     }
 
+    /**
+     * Loading feedback is UI-only and never replaces server-side authentication.
+     * A timeout clears the scrim so users can reach the underlying login page
+     * even if the network stalls or the server returns an unexpected response.
+     */
+    private void showLoading(String heading) {
+        loadingHeading.setText(heading);
+        loadingDescription.setText(R.string.loading_wait);
+        loadingOverlay.setVisibility(View.VISIBLE);
+        if (overlayTimeout != null) overlayHandler.removeCallbacks(overlayTimeout);
+        overlayTimeout = () -> {
+            if (loadingOverlay.getVisibility() == View.VISIBLE) {
+                autoLoginInProgress = false;
+                loadingDescription.setText(R.string.loading_long);
+                loadingOverlay.setVisibility(View.GONE);
+                swipeRefresh.setRefreshing(false);
+                Toast.makeText(this, R.string.loading_long, Toast.LENGTH_LONG).show();
+            }
+        };
+        overlayHandler.postDelayed(overlayTimeout, LOADING_TIMEOUT_MS);
+    }
+
+    private void hideLoading() {
+        if (overlayTimeout != null) {
+            overlayHandler.removeCallbacks(overlayTimeout);
+            overlayTimeout = null;
+        }
+        loadingOverlay.setVisibility(View.GONE);
+    }
+
     private void configureWebView() {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -193,13 +236,22 @@ public final class MainActivity extends Activity {
                 errorPanel.setVisibility(View.GONE);
                 loadingBar.setVisibility(View.VISIBLE);
                 loadingBar.setProgress(4);
+                showLoading(autoLoginInProgress
+                        ? getString(R.string.loading_signin)
+                        : getString(R.string.loading_page));
             }
             @Override
             public void onPageFinished(WebView view, String url) {
                 loadingBar.setProgress(100);
                 loadingBar.setVisibility(View.GONE);
                 swipeRefresh.setRefreshing(false);
-                maybeAutoLogin(url);
+                if (autoLoginInProgress) {
+                    autoLoginInProgress = false;
+                    hideLoading();
+                } else {
+                    maybeAutoLogin(url);
+                    if (!autoLoginInProgress) hideLoading();
+                }
             }
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request,
@@ -381,6 +433,8 @@ public final class MainActivity extends Activity {
         if (login == null || !login.autoLogin ||
                 login.username.isEmpty() || login.password.isEmpty()) return;
         autoLoginAttempted = true;
+        autoLoginInProgress = true;
+        showLoading(getString(R.string.loading_signin));
         submitSavedLogin(login, 0);
     }
 
@@ -396,7 +450,11 @@ public final class MainActivity extends Activity {
     }
 
     private void submitSavedLogin(CredentialVault.SavedLogin login, int retryCount) {
-        if (!isExactLoginPage(webView.getUrl())) return;
+        if (!isExactLoginPage(webView.getUrl())) {
+            autoLoginInProgress = false;
+            hideLoading();
+            return;
+        }
         // Check URL in Java and again inside the page: avoid brittle regex escaping.
         // Never send saved credentials to any other domain or page.
         String js = "(function(){"
@@ -433,15 +491,21 @@ public final class MainActivity extends Activity {
                     isExactLoginPage(webView.getUrl())) {
                 webView.postDelayed(() -> submitSavedLogin(login, retryCount + 1), 450);
             } else if ("\"waiting\"".equals(result)) {
+                autoLoginInProgress = false;
+                hideLoading();
                 Toast.makeText(this,
                         "Auto-login could not locate the login form. Sign in manually.",
                         Toast.LENGTH_LONG).show();
+            } else if (!"\"submitted\"".equals(result)) {
+                autoLoginInProgress = false;
+                hideLoading();
             }
         });
     }
 
     private void retry() {
         errorPanel.setVisibility(View.GONE);
+        showLoading(getString(R.string.loading_page));
         String current = webView.getUrl();
         if (current != null && isTrustedUrl(Uri.parse(current))) webView.reload();
         else webView.loadUrl(LOGIN_URL);
@@ -450,6 +514,8 @@ public final class MainActivity extends Activity {
         errorPanel.setVisibility(View.VISIBLE);
         loadingBar.setVisibility(View.GONE);
         swipeRefresh.setRefreshing(false);
+        autoLoginInProgress = false;
+        hideLoading();
     }
     private void openExternal(Uri uri) {
         if (!isSafeExternalWebUrl(uri)) return;
@@ -526,11 +592,16 @@ public final class MainActivity extends Activity {
     @Override
     public void onBackPressed() {
         if (errorPanel.getVisibility() == View.VISIBLE) retry();
-        else if (webView.canGoBack()) webView.goBack();
+        else if (webView.canGoBack()) {
+            showLoading(getString(R.string.loading_page));
+            webView.goBack();
+        }
         else super.onBackPressed();
     }
     @Override
     protected void onDestroy() {
+        hideLoading();
+        overlayHandler.removeCallbacksAndMessages(null);
         swipeRefresh.setRefreshing(false);
         if (pendingFileChooser != null) {
             pendingFileChooser.onReceiveValue(null);

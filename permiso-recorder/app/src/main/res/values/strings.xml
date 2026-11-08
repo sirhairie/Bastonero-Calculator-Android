@@ -9,4 +9,9 @@
     <string name="error_title">Cannot connect to PERMISO</string>
     <string name="error_description">Check your internet connection and try again. If the website is unavailable, contact the PERMISO administrator.</string>
     <string name="try_again">Try again</string>
+    <string name="loading_page">Loading page…</string>
+    <string name="loading_signin">Signing in…</string>
+    <string name="loading_opening">Opening PERMISO…</string>
+    <string name="loading_wait">Please wait a moment</string>
+    <string name="loading_long">The connection is taking longer than expected.</string>
 </resources>

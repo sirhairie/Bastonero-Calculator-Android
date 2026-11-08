@@ -1,19 +1,13 @@
-# PERMISO Recorder v1.3.0
+# PERMISO Recorder v1.4.0
 
-## Interface
-- No native app title bar or repeated PERMISO branding: the website uses the available screen height, below the Android system status bar.
-- A discreet round floating Settings button replaces the entire native toolbar. Tap for the existing native Settings screen; drag the bubble away from the website's scanner/action controls.
-- Pull down from the top of the page to refresh; refresh is disabled while the QR camera stream is granted/active to avoid unexpected scanner interruptions.
-- Small loading bar and existing connection-error retry remain.
+## Native loading popup
+A centered progress spinner and message appear for initial loading, in-app full-page navigation, refresh, WebView back navigation, and saved-credential auto-login. Auto-login shows **Signing in…** while form submission is processed by the existing PERMISO website. Navigation shows **Loading page…**. The popup is automatically dismissed when navigation completes, on connection errors, if automatic login cannot find a form, or after a 14-second safety timeout. It never alters backend authentication, QR recording, records, or DTR.
 
-## Unchanged operations
-- Auto-login through the existing authorized HTTPS PERMISO Recorder login form, with opt-in encrypted credentials stored only on-device using Android Keystore.
-- Camera permissions and QR scan, Recorder records, DTR and download handling use the existing live PERMISO backend.
-- No website or database modifications.
+## Preserved v1.3 behavior
+Full-height website interface with draggable floating Settings button, pull-to-refresh (disabled while QR camera access is active), website session handling, AES-GCM encrypted saved credentials, and unchanged permissions/download handling.
 
-## Installing
-GitHub Actions compiles a debug-signed Android APK (Android 8.0+). Android may reject an update if debug signatures differ across GitHub builds. If this happens, uninstall the previous app, install v1.3.0 and enter your saved login again in Settings. Uninstallation removes saved login from the phone but does not affect server-side PERMISO data.
-Use auto-login only on a private phone protected by a screen lock.
+## Test checklist
+On Android phone test: open app with/without auto-login; navigate between Scanner, Records, DTR; reload and back; QR scanner camera with a live QR code; network interruption; invalid saved credentials; clear credentials. Website implementations that switch tabs entirely within a single document without browser navigation will not trigger native page load callbacks.
 
-## Validation
-After installation, test dragging the floating gear, pull-to-refresh, automatic sign-in, camera QR scanning, Records and DTR on a physical Android device. A GitHub build success is not proof of runtime functionality.
+## Installation
+GitHub Actions builds a debug APK (Android 8.0+). Because hosted builds may have different debug signing certificates, an update can require uninstalling the previous app, which clears locally encrypted saved credentials. Existing server records are unaffected.
