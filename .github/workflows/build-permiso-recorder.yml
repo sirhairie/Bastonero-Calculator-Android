@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-debug-apk:
@@ -42,3 +42,27 @@ jobs:
           path: permiso-recorder/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      # GitHub Releases provides a single .apk link that installs without ZIP extraction
+      # or a GitHub login. The APK remains debug-signed for testing, not Play Store release.
+      - name: Publish direct APK download on GitHub Releases
+        if: github.ref == 'refs/heads/permiso-recorder-v1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_VERSION="$(sed -n "s/.*versionName '\\([^']*\\)'.*/\\1/p" permiso-recorder/app/build.gradle)"
+          test -n "$APP_VERSION"
+          RELEASE_TAG="permiso-recorder-v$APP_VERSION"
+          APK_NAME="PERMISO-Recorder-v$APP_VERSION.apk"
+          cp permiso-recorder/app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$APK_NAME" --clobber
+          else
+            gh release create "$RELEASE_TAG" "$APK_NAME" \
+              --target "$GITHUB_SHA" \
+              --title "PERMISO Recorder Android v$APP_VERSION" \
+              --notes "Direct-install Android APK. This APK is debug-signed and intended for internal testing. Download the APK file directly to your phone; no ZIP extraction is needed." \
+              --latest=false
+          fi
