@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="navy">#103B63</color>
+    <color name="navy_dark">#082944</color>
+    <color name="teal">#23B9A8</color>
+    <color name="cloud">#F4F7FB</color>
+    <color name="ink">#17324A</color>
+    <color name="subtle">#5B7084</color>
+</resources>
