@@ -1,78 +1,135 @@
 package ph.com.smnhs.permiso.recorder;
 
 /**
- * A visual-only helper for tabs that switch panels without a main-frame load.
- * This script never sees credentials, controls authentication or alters scans.
+ * Visual-only early navigation feedback. No credentials or record data are accessed.
+ * Non-interactive overlay never consumes website taps, camera, or confirmation input.
  */
 final class NavigationFeedback {
     private NavigationFeedback() {}
 
     static String script() {
         return """
-        (function () {
-          if (window.__permisoRecorderNavSpinnerV14) return;
-          window.__permisoRecorderNavSpinnerV14 = true;
-
-          var overlay = null, observer = null, maxTimer = null, closeTimer = null;
-          var startedAt = 0;
-
-          function removeSpinner() {
-            if (maxTimer) { clearTimeout(maxTimer); maxTimer = null; }
-            if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
-            if (observer) { observer.disconnect(); observer = null; }
-            if (overlay) { overlay.remove(); overlay = null; }
+        (function() {
+          if (location.protocol !== 'https:' ||
+              !['smnhs.com','www.smnhs.com'].includes(location.hostname) ||
+              !(location.pathname === '/permiso' ||
+                location.pathname.startsWith('/permiso/'))) return;
+          if (window.__permisoNavFeedbackV15) return;
+          window.__permisoNavFeedbackV15 = true;
+          var overlay=null,observer=null,finishTimer=null,safetyTimer=null;
+          var active=null,begin=0,pointer=null;
+          function remove() {
+            if (finishTimer) clearTimeout(finishTimer);
+            if (safetyTimer) clearTimeout(safetyTimer);
+            if (observer) observer.disconnect();
+            if (overlay) overlay.remove();
+            overlay=null;observer=null;finishTimer=null;safetyTimer=null;
+            pointer=null;active=null;
           }
-
-          function showSpinner() {
-            removeSpinner();
-            var style = document.getElementById('permiso-app-nav-style');
-            if (!style) {
-              style = document.createElement('style');
-              style.id = 'permiso-app-nav-style';
-              style.textContent = '@keyframes permiso-app-spin{to{transform:rotate(360deg)}}';
-              document.head.appendChild(style);
+          function getControl(target) {
+            var e=target && (target.nodeType===1 ? target : target.parentElement);
+            return e && e.closest ? e.closest(
+              'a,button,input[type=submit],input[type=button],' +
+              '[role=tab],[role=button],[onclick],.nav-link,.btn') : null;
+          }
+          function label(el) {
+            return String(el.getAttribute('aria-label') ||
+              el.getAttribute('title') || el.innerText ||
+              el.textContent || el.value || '').trim().toLowerCase();
+          }
+          function allowed(el) {
+            if (!el || el.disabled || el.getAttribute('aria-disabled')==='true') return false;
+            var l=label(el);
+            // Do not interrupt starting, restarting or switching the QR camera.
+            if (l.includes('start camera') || l.includes('camera scanner') ||
+                l.includes('scan qr') || l.includes('switch camera') ||
+                l.includes('restart camera') || l.includes('stop camera')) return false;
+            return true;
+          }
+          function finishLater() {
+            if (finishTimer || !overlay) return;
+            finishTimer=setTimeout(remove,Math.max(70,650-(Date.now()-begin)));
+          }
+          function show(el) {
+            if (!document.body || !allowed(el) || overlay) return;
+            active=el;
+            var css=document.getElementById('permiso-nav-spinner-style-v15');
+            if (!css) {
+              css=document.createElement('style');
+              css.id='permiso-nav-spinner-style-v15';
+              css.textContent='@keyframes permiso-spin-v15{to{transform:rotate(360deg)}}';
+              (document.head || document.documentElement).appendChild(css);
             }
-            overlay = document.createElement('div');
-            overlay.id = 'permiso-app-nav-overlay';
-            overlay.setAttribute('role', 'status');
-            overlay.setAttribute('aria-label', 'Loading page');
-            overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:2147483646;background:rgba(6,25,46,.55);pointer-events:none;';
-            overlay.innerHTML = '<div style="min-width:192px;max-width:85vw;background:white;border-radius:18px;padding:25px 24px;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.20);font:600 16px system-ui,sans-serif;color:#17324A">'
-              + '<div style="height:42px;width:42px;border:4px solid #DAE9EE;border-top-color:#23B9A8;border-radius:50%;animation:permiso-app-spin .8s linear infinite;margin:0 auto 14px"></div>'
-              + 'Loading page…<div style="font:400 13px system-ui,sans-serif;color:#637789;margin-top:5px">Please wait a moment</div></div>';
-            document.body.appendChild(overlay);
-            startedAt = Date.now();
-
-            // End visual feedback after the site changes tabs/panels.
-            observer = new MutationObserver(function(changes) {
-              var changed = changes.some(function(record) {
-                var node = record.target;
-                return node && node !== overlay && !overlay.contains(node)
-                    && node.id !== 'permiso-app-nav-style';
+            var signout=label(el).includes('logout') ||
+              label(el).includes('log out') || label(el).includes('sign out');
+            overlay=document.createElement('div');
+            overlay.id='permiso-app-nav-overlay';
+            overlay.setAttribute('role','status');
+            overlay.style.cssText='position:fixed;inset:0;z-index:2147483646;' +
+              'display:flex;justify-content:center;align-items:center;' +
+              'background:rgba(6,25,46,.55);pointer-events:none;';
+            var box=document.createElement('div');
+            box.style.cssText='min-width:192px;max-width:85vw;background:#fff;' +
+              'border-radius:18px;padding:25px 24px;text-align:center;' +
+              'box-shadow:0 12px 30px rgba(0,0,0,.20);' +
+              'font:600 16px system-ui,sans-serif;color:#17324A';
+            var circle=document.createElement('div');
+            circle.style.cssText='height:42px;width:42px;' +
+              'border:4px solid #DAE9EE;border-top-color:#23B9A8;' +
+              'border-radius:50%;animation:permiso-spin-v15 .8s linear infinite;' +
+              'margin:0 auto 14px';
+            var heading=document.createElement('div');
+            heading.textContent=signout ? 'Signing out…' : 'Loading page…';
+            var sub=document.createElement('div');
+            sub.textContent='Please wait a moment';
+            sub.style.cssText='font:400 13px system-ui,sans-serif;' +
+              'color:#637789;margin-top:5px';
+            box.appendChild(circle);box.appendChild(heading);box.appendChild(sub);
+            overlay.appendChild(box);document.body.appendChild(overlay);
+            begin=Date.now();
+            observer=new MutationObserver(function(records) {
+              var changed=records.some(function(r) {
+                var n=r.target;
+                if (!n || n===overlay || overlay.contains(n)) return false;
+                if (n.id==='permiso-nav-spinner-style-v15') return false;
+                if (active && (n===active ||
+                  (active.contains && active.contains(n))) &&
+                  r.attributeName!=='aria-selected') return false;
+                return true;
               });
-              if (changed && !closeTimer) {
-                closeTimer = setTimeout(removeSpinner,
-                    Math.max(1, 400 - (Date.now() - startedAt)));
-              }
+              if (changed) finishLater();
             });
-            observer.observe(document.body, {
-              childList: true, subtree: true, attributes: true,
-              attributeFilter: ['style','class','hidden','aria-selected']
-            });
-            // Fail-safe: never leave a tab transition obscured indefinitely.
-            maxTimer = setTimeout(removeSpinner, 4500);
+            observer.observe(document.body,{childList:true,subtree:true,
+              attributes:true,attributeFilter:['class','style','hidden','aria-selected']});
+            safetyTimer=setTimeout(remove,5200);
           }
-
-          document.addEventListener('click', function(event) {
-            var target = event.target && event.target.closest
-              ? event.target.closest('a,button,[role="tab"]') : null;
-            if (!target) return;
-            var label = String(target.textContent || '').trim().toLowerCase().replace(/\\s+/g,' ');
-            if (label === 'scanner' || label === 'records' || label === 'dtr') {
-              showSpinner();
+          // Pointerdown occurs before click, URL navigation and AJAX handlers.
+          document.addEventListener('pointerdown',function(e) {
+            if (e.button!==undefined && e.button!==0) return;
+            var control=getControl(e.target);
+            if (!allowed(control)) return;
+            pointer={x:e.clientX,y:e.clientY};
+            show(control);
+          },true);
+          document.addEventListener('pointermove',function(e) {
+            if (pointer && Math.hypot(e.clientX-pointer.x,e.clientY-pointer.y)>18) {
+              remove(); // scrolling gesture, not a button tap
             }
-          }, true);
-          window.addEventListener('pagehide', removeSpinner);
+          },true);
+          document.addEventListener('pointercancel',remove,true);
+          // Keyboard activation, accessibility services and synthetic clicks.
+          document.addEventListener('click',function(e) {
+            var control=getControl(e.target);
+            if (!overlay && allowed(control)) show(control);
+          },true);
+          document.addEventListener('submit',function(e) {
+            if (!overlay && e.target && e.target.tagName==='FORM') {
+              var btn=e.submitter || e.target.querySelector(
+                'button[type=submit],input[type=submit]');
+              if (btn) show(btn);
+            }
+          },true);
+          window.addEventListener('pagehide',remove,true);
         })();
         """;
     }

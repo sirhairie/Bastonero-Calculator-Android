@@ -241,6 +241,13 @@ public final class MainActivity extends Activity {
                         : getString(R.string.loading_page));
             }
             @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                // Early delegated handlers let the spinner appear before website navigation.
+                if (isTrustedUrl(Uri.parse(url))) {
+                    view.evaluateJavascript(NavigationFeedback.script(), null);
+                }
+            }
+            @Override
             public void onPageFinished(WebView view, String url) {
                 loadingBar.setProgress(100);
                 loadingBar.setVisibility(View.GONE);
