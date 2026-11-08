@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    android:background="@color/cloud">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:background="@drawable/toolbar_gradient"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="16dp"
+        android:orientation="horizontal">
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="@drawable/action_button"
+            android:padding="10dp"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="Back"
+            android:tint="#FFFFFF" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="Recorder Settings"
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="19sp"/>
+    </LinearLayout>
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="22dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Saved Recorder Login"
+                android:textColor="@color/ink"
+                android:fontFamily="sans-serif-medium"
+                android:textSize="23sp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Use your existing authorized PERMISO Recorder account."
+                android:textSize="14sp"
+                android:textColor="@color/subtle"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30dp"
+                android:text="Username"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium"/>
+            <EditText
+                android:id="@+id/savedUsername"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="7dp"
+                android:paddingStart="13dp"
+                android:paddingEnd="13dp"
+                android:background="@drawable/settings_field"
+                android:hint="Recorder username"
+                android:inputType="textNoSuggestions"
+                android:singleLine="true"
+                android:textColor="@color/ink"
+                android:textColorHint="@color/subtle"
+                android:textSize="16sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Password"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium"/>
+            <EditText
+                android:id="@+id/savedPassword"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="7dp"
+                android:paddingStart="13dp"
+                android:paddingEnd="13dp"
+                android:background="@drawable/settings_field"
+                android:hint="Recorder password"
+                android:inputType="textPassword"
+                android:singleLine="true"
+                android:textColor="@color/ink"
+                android:textColorHint="@color/subtle"
+                android:textSize="16sp" />
+            <CheckBox
+                android:id="@+id/showPasswordToggle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:buttonTint="@color/teal"
+                android:text="Show password"
+                android:textSize="14sp"
+                android:textColor="@color/subtle"/>
+            <CheckBox
+                android:id="@+id/autoLoginToggle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:buttonTint="@color/teal"
+                android:text="Automatically sign in when opening the app"
+                android:textColor="@color/ink"
+                android:textSize="15sp" />
+            <TextView
+                android:id="@+id/credentialStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="@color/subtle"
+                android:textSize="13sp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:padding="14dp"
+                android:background="@drawable/security_note"
+                android:text="Security: Credentials are encrypted with Android Keystore and remain on this device. Auto-login is recommended only for a private, locked phone. The PERMISO website still validates every login."
+                android:textColor="@color/ink"
+                android:textSize="13sp"/>
+            <Button
+                android:id="@+id/saveCredentials"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/retry_button"
+                android:text="Save Settings"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"/>
+            <Button
+                android:id="@+id/clearCredentials"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="9dp"
+                android:background="@drawable/clear_button"
+                android:text="Clear Saved Login"
+                android:textAllCaps="false"
+                android:textColor="@color/ink"
+                android:textSize="15sp"/>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

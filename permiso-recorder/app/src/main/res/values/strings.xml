@@ -5,6 +5,7 @@
     <string name="subtitle">Authorized QR recording</string>
     <string name="reload">Refresh</string>
     <string name="browser">Open in browser</string>
+    <string name="settings">Recorder settings</string>
     <string name="error_title">Cannot connect to PERMISO</string>
     <string name="error_description">Check your internet connection and try again. If the website is unavailable, contact the PERMISO administrator.</string>
     <string name="try_again">Try again</string>

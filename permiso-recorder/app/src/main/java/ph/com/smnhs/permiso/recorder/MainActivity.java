@@ -13,6 +13,8 @@ import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
+import android.graphics.Color;
+import org.json.JSONObject;
 import android.os.Environment;
 import android.view.View;
 import android.webkit.CookieManager;
@@ -41,6 +43,8 @@ public final class MainActivity extends Activity {
     private static final int CAMERA_REQUEST_CODE = 2101;
     private static final int FILE_REQUEST_CODE = 2102;
     private static final int STORAGE_REQUEST_CODE = 2103;
+    private static final int SETTINGS_REQUEST_CODE = 2104;
+    private boolean autoLoginAttempted = false;
     private WebView webView;
     private ProgressBar loadingBar;
     private LinearLayout errorPanel;
@@ -64,10 +68,16 @@ public final class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setStatusBarColor(getColor(R.color.navy_dark));
+        getWindow().getDecorView().setSystemUiVisibility(0);
+        getWindow().setNavigationBarColor(getColor(R.color.navy_dark));
         setContentView(R.layout.activity_main);
         webView = findViewById(R.id.recorderWebView);
         loadingBar = findViewById(R.id.loadingBar);
         errorPanel = findViewById(R.id.errorPanel);
+        findViewById(R.id.settingsButton).setOnClickListener(v ->
+                startActivityForResult(new Intent(this, SettingsActivity.class),
+                        SETTINGS_REQUEST_CODE));
         ImageButton reload = findViewById(R.id.reloadButton);
         ImageButton browser = findViewById(R.id.browserButton);
         reload.setOnClickListener(v -> retry());
@@ -121,6 +131,7 @@ public final class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 loadingBar.setProgress(100);
                 loadingBar.setVisibility(View.GONE);
+                maybeAutoLogin(url);
             }
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request,
@@ -286,6 +297,67 @@ public final class MainActivity extends Activity {
             request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
         }
     }
+    /**
+     * Submit saved credentials only on the exact first-party scanner login URL.
+     * Trigger once per app launch (or after saving settings), never on scanner,
+     * records, DTR or arbitrary web pages. The existing website authenticates.
+     */
+    private void maybeAutoLogin(String finishedUrl) {
+        if (autoLoginAttempted || !isExactLoginPage(finishedUrl)) return;
+        if (!isExactLoginPage(webView.getUrl())) return;
+        CredentialVault.SavedLogin login = CredentialVault.load(this);
+        if (login == null || !login.autoLogin ||
+                login.username.isEmpty() || login.password.isEmpty()) return;
+        autoLoginAttempted = true;
+        submitSavedLogin(login, 0);
+    }
+
+    private static boolean isExactLoginPage(String url) {
+        if (url == null) return false;
+        Uri uri = Uri.parse(url);
+        String path = uri.getPath();
+        return "https".equalsIgnoreCase(uri.getScheme()) &&
+                isTrustedHost(uri.getHost()) &&
+                "/permiso/scanner-login.php".equals(path) &&
+                uri.getUserInfo() == null &&
+                (uri.getPort() == -1 || uri.getPort() == 443);
+    }
+
+    private void submitSavedLogin(CredentialVault.SavedLogin login, int retryCount) {
+        if (!isExactLoginPage(webView.getUrl())) return;
+        String js = "(function(){"
+                + "if(!/^[\\\\/]permiso[\\\\/]scanner-login\\\\.php$/.test(location.pathname))return 'wrong-page';"
+                + "var pass=document.querySelector('input[type=password]');"
+                + "var form=pass&&pass.form;"
+                + "if(!form)return 'waiting';"
+                + "var user=form.querySelector('input[name=username],input[id=username],"
+                + "input[autocomplete=username],input[type=text],input[type=email]');"
+                + "if(!user)return 'waiting';"
+                + "var setValue=function(input,val){"
+                + "var desc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');"
+                + "if(desc&&desc.set)desc.set.call(input,val);else input.value=val;"
+                + "input.dispatchEvent(new Event('input',{bubbles:true}));"
+                + "input.dispatchEvent(new Event('change',{bubbles:true}));"
+                + "};"
+                + "setValue(user," + JSONObject.quote(login.username) + ");"
+                + "setValue(pass," + JSONObject.quote(login.password) + ");"
+                + "var button=form.querySelector('button[type=submit],input[type=submit],button');"
+                + "if(button)button.click();"
+                + "else if(form.requestSubmit)form.requestSubmit();else form.submit();"
+                + "return 'submitted';"
+                + "})();";
+        webView.evaluateJavascript(js, result -> {
+            if ("\"waiting\"".equals(result) && retryCount < 4 &&
+                    isExactLoginPage(webView.getUrl())) {
+                webView.postDelayed(() -> submitSavedLogin(login, retryCount + 1), 350);
+            } else if ("\"waiting\"".equals(result)) {
+                Toast.makeText(this,
+                        "Auto-login could not locate the login form. Sign in manually.",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
     private void retry() {
         errorPanel.setVisibility(View.GONE);
         String current = webView.getUrl();
@@ -350,7 +422,12 @@ public final class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == FILE_REQUEST_CODE && pendingFileChooser != null) {
+        if (requestCode == SETTINGS_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                autoLoginAttempted = false;
+                maybeAutoLogin(webView.getUrl());
+            }
+        } else if (requestCode == FILE_REQUEST_CODE && pendingFileChooser != null) {
             Uri[] results = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
             pendingFileChooser.onReceiveValue(results);
             pendingFileChooser = null;

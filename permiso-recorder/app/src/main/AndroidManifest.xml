@@ -13,6 +13,9 @@
         android:icon="@drawable/brand_mark"
         android:theme="@style/Theme.PermisoRecorder"
         android:supportsRtl="true">
+        <activity android:name=".SettingsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
