@@ -1,109 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Android system bars remain visible. The website owns the full PERMISO header. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mainContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:fitsSystemWindows="true"
-    android:background="@color/navy_dark">
-    <!-- No duplicate PERMISO title: the website owns the page header. -->
-    <LinearLayout
+    android:background="@color/cloud">
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:paddingStart="9dp"
-        android:paddingEnd="9dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:background="@drawable/toolbar_gradient">
-        <ImageView
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:contentDescription="@null"
-            android:src="@drawable/recorder_logo" />
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-        <ImageButton
-            android:id="@+id/reloadButton"
-            android:layout_width="42dp"
-            android:layout_height="40dp"
-            android:background="@drawable/action_button"
-            android:src="@drawable/ic_refresh"
-            android:contentDescription="@string/reload"
-            android:scaleType="centerInside"
-            android:padding="10dp"
-            android:tint="#FFFFFF" />
-        <ImageButton
-            android:id="@+id/settingsButton"
-            android:layout_width="42dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/action_button"
-            android:src="@drawable/ic_settings"
-            android:contentDescription="@string/settings"
-            android:scaleType="centerInside"
-            android:padding="10dp"
-            android:tint="#FFFFFF" />
-    </LinearLayout>
-    <ProgressBar
-        android:id="@+id/loadingBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="3dp"
-        android:max="100"
-        android:indeterminate="false"
-        android:progressTint="@color/teal"
-        android:progressBackgroundTint="#E9EEF3" />
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="match_parent">
         <WebView
             android:id="@+id/recorderWebView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="#FFFFFF" />
-        <LinearLayout
-            android:id="@+id/errorPanel"
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <ProgressBar
+        android:id="@+id/loadingBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:layout_gravity="top"
+        android:max="100"
+        android:indeterminate="false"
+        android:progressTint="@color/teal"
+        android:progressBackgroundTint="#E9EEF3" />
+
+    <LinearLayout
+        android:id="@+id/errorPanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/cloud"
+        android:padding="30dp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:orientation="vertical">
+        <ImageView
+            android:layout_width="78dp"
+            android:layout_height="78dp"
+            android:src="@drawable/recorder_logo"
+            android:contentDescription="@null" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/error_title"
+            android:textColor="@color/ink"
+            android:textSize="20sp"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center" />
+        <TextView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/cloud"
-            android:padding="30dp"
-            android:gravity="center"
-            android:visibility="gone"
-            android:orientation="vertical">
-            <ImageView
-                android:layout_width="78dp"
-                android:layout_height="78dp"
-                android:src="@drawable/recorder_logo"
-                android:contentDescription="@null" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="@string/error_title"
-                android:textColor="@color/ink"
-                android:textSize="20sp"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="center" />
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="@string/error_description"
-                android:textColor="@color/subtle"
-                android:textSize="14sp"
-                android:gravity="center" />
-            <Button
-                android:id="@+id/retryButton"
-                android:layout_width="190dp"
-                android:layout_height="50dp"
-                android:layout_marginTop="25dp"
-                android:background="@drawable/retry_button"
-                android:text="@string/try_again"
-                android:textAllCaps="false"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp" />
-        </LinearLayout>
-    </FrameLayout>
-</LinearLayout>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/error_description"
+            android:textColor="@color/subtle"
+            android:textSize="14sp"
+            android:gravity="center" />
+        <Button
+            android:id="@+id/retryButton"
+            android:layout_width="190dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="25dp"
+            android:background="@drawable/retry_button"
+            android:text="@string/try_again"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp" />
+    </LinearLayout>
+
+    <!-- Drag to reposition if it obscures a scanner control. Tap for Settings. -->
+    <ImageButton
+        android:id="@+id/settingsButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="24dp"
+        android:padding="12dp"
+        android:background="@drawable/floating_settings_background"
+        android:src="@drawable/ic_settings"
+        android:scaleType="fitCenter"
+        android:contentDescription="@string/settings"
+        android:alpha="0.88"
+        android:elevation="10dp"
+        android:focusable="true"
+        android:clickable="true"
+        android:tint="#FFFFFFFF" />
+</FrameLayout>

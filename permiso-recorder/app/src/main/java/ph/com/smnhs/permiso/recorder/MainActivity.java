@@ -17,6 +17,10 @@ import android.graphics.Color;
 import org.json.JSONObject;
 import android.os.Environment;
 import android.view.View;
+import android.view.MotionEvent;
+import android.view.ViewConfiguration;
+import android.widget.FrameLayout;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import android.webkit.CookieManager;
 import android.webkit.JsPromptResult;
 import android.webkit.JsResult;
@@ -46,6 +50,9 @@ public final class MainActivity extends Activity {
     private static final int SETTINGS_REQUEST_CODE = 2104;
     private boolean autoLoginAttempted = false;
     private WebView webView;
+    private SwipeRefreshLayout swipeRefresh;
+    private FrameLayout mainContainer;
+    private boolean cameraStreamActive = false;
     private ProgressBar loadingBar;
     private LinearLayout errorPanel;
     private PermissionRequest pendingCameraPermission;
@@ -75,11 +82,20 @@ public final class MainActivity extends Activity {
         webView = findViewById(R.id.recorderWebView);
         loadingBar = findViewById(R.id.loadingBar);
         errorPanel = findViewById(R.id.errorPanel);
-        findViewById(R.id.settingsButton).setOnClickListener(v ->
-                startActivityForResult(new Intent(this, SettingsActivity.class),
-                        SETTINGS_REQUEST_CODE));
-        ImageButton reload = findViewById(R.id.reloadButton);
-        reload.setOnClickListener(v -> retry());
+        mainContainer = findViewById(R.id.mainContainer);
+        swipeRefresh = findViewById(R.id.swipeRefresh);
+        swipeRefresh.setColorSchemeResources(R.color.teal, R.color.navy);
+        swipeRefresh.setProgressBackgroundColorSchemeResource(R.color.cloud);
+        swipeRefresh.setOnChildScrollUpCallback((parent, child) ->
+                cameraStreamActive || webView.getScrollY() > 0);
+        swipeRefresh.setOnRefreshListener(() -> {
+            if (cameraStreamActive) {
+                swipeRefresh.setRefreshing(false);
+                return;
+            }
+            retry();
+        });
+        installFloatingSettings();
         findViewById(R.id.retryButton).setOnClickListener(v -> retry());
         configureWebView();
         if (savedInstanceState != null && webView.restoreState(savedInstanceState) != null) {
@@ -87,6 +103,57 @@ public final class MainActivity extends Activity {
         } else {
             webView.loadUrl(LOGIN_URL);
         }
+    }
+
+    /**
+     * Tap to open settings, or drag to move the button away from scanner controls.
+     */
+    private void installFloatingSettings() {
+        ImageButton bubble = findViewById(R.id.settingsButton);
+        bubble.setOnClickListener(v -> startActivityForResult(
+                new Intent(this, SettingsActivity.class), SETTINGS_REQUEST_CODE));
+        final float[] startX = {0}, startY = {0}, initialX = {0}, initialY = {0};
+        final boolean[] dragging = {false};
+        final int slop = ViewConfiguration.get(this).getScaledTouchSlop();
+        bubble.setOnTouchListener((view, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    startX[0] = event.getRawX();
+                    startY[0] = event.getRawY();
+                    initialX[0] = bubble.getTranslationX();
+                    initialY[0] = bubble.getTranslationY();
+                    dragging[0] = false;
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    float dx = event.getRawX() - startX[0];
+                    float dy = event.getRawY() - startY[0];
+                    if (!dragging[0] && Math.hypot(dx, dy) >= slop) dragging[0] = true;
+                    if (dragging[0]) {
+                        float padding = getResources().getDisplayMetrics().density * 8f;
+                        float minX = padding - bubble.getLeft();
+                        float maxX = mainContainer.getWidth() - padding
+                                - bubble.getLeft() - bubble.getWidth();
+                        float minY = padding - bubble.getTop();
+                        float maxY = mainContainer.getHeight() - padding
+                                - bubble.getTop() - bubble.getHeight();
+                        bubble.setTranslationX(Math.max(minX,
+                                Math.min(maxX, initialX[0] + dx)));
+                        bubble.setTranslationY(Math.max(minY,
+                                Math.min(maxY, initialY[0] + dy)));
+                        bubble.setAlpha(1f);
+                    }
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    bubble.setAlpha(0.88f);
+                    if (!dragging[0]) view.performClick();
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    bubble.setAlpha(0.88f);
+                    return true;
+                default:
+                    return false;
+            }
+        });
     }
 
     private void configureWebView() {
@@ -121,6 +188,8 @@ public final class MainActivity extends Activity {
             }
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                cameraStreamActive = false;
+                swipeRefresh.setEnabled(true);
                 errorPanel.setVisibility(View.GONE);
                 loadingBar.setVisibility(View.VISIBLE);
                 loadingBar.setProgress(4);
@@ -129,6 +198,7 @@ public final class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 loadingBar.setProgress(100);
                 loadingBar.setVisibility(View.GONE);
+                swipeRefresh.setRefreshing(false);
                 maybeAutoLogin(url);
             }
             @Override
@@ -164,6 +234,8 @@ public final class MainActivity extends Activity {
             public void onPermissionRequestCanceled(PermissionRequest request) {
                 runOnUiThread(() -> {
                     if (pendingCameraPermission == request) pendingCameraPermission = null;
+                    cameraStreamActive = false;
+                    swipeRefresh.setEnabled(true);
                 });
             }
             @Override
@@ -292,6 +364,8 @@ public final class MainActivity extends Activity {
         PermissionRequest request = pendingCameraPermission;
         pendingCameraPermission = null;
         if (request != null) {
+            cameraStreamActive = true;
+            swipeRefresh.setEnabled(false);
             request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
         }
     }
@@ -375,6 +449,7 @@ public final class MainActivity extends Activity {
     private void showConnectionError() {
         errorPanel.setVisibility(View.VISIBLE);
         loadingBar.setVisibility(View.GONE);
+        swipeRefresh.setRefreshing(false);
     }
     private void openExternal(Uri uri) {
         if (!isSafeExternalWebUrl(uri)) return;
@@ -415,6 +490,8 @@ public final class MainActivity extends Activity {
         if (requestCode == CAMERA_REQUEST_CODE) {
             if (granted) grantPendingCamera();
             else {
+                cameraStreamActive = false;
+                swipeRefresh.setEnabled(true);
                 PermissionRequest request = pendingCameraPermission;
                 pendingCameraPermission = null;
                 if (request != null) request.deny();
@@ -454,6 +531,7 @@ public final class MainActivity extends Activity {
     }
     @Override
     protected void onDestroy() {
+        swipeRefresh.setRefreshing(false);
         if (pendingFileChooser != null) {
             pendingFileChooser.onReceiveValue(null);
             pendingFileChooser = null;
